@@ -64,14 +64,18 @@ export function useJitPreference() {
     }
   }
 
-  /** Convenience: declare the same amount across the three LATAM pools. */
+  /** Convenience: declare the same amount across all six LATAM pools — three
+   *  Ripio markets + three Twin markets — backed by one shared SLP deposit. */
   async function backAllLatamPools(humanAmount: string) {
-    // All four mocks are 6 decimals — keeps the demo math clean.
+    // All seven mocks are 6 decimals — keeps the demo math clean.
     const dec = TOKENS.usdc.decimals;
     const pools = [
       FUJI_DEPLOYMENT.pools.warsUsdcAqua0,
       FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0,
       FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0,
+      FUJI_DEPLOYMENT.pools.nuarsUsdcAqua0,
+      FUJI_DEPLOYMENT.pools.nubrlUsdcAqua0,
+      FUJI_DEPLOYMENT.pools.numxnUsdcAqua0,
     ];
     for (const poolId of pools) {
       await setPreference({

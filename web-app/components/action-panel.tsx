@@ -6,15 +6,15 @@ import { useMint } from "@/hooks/use-mint";
 import { useDeposit } from "@/hooks/use-deposit";
 import { useJitPreference } from "@/hooks/use-jit-preference";
 import { useSLPBalance, useWalletBalance } from "@/hooks/use-slp-balance";
-import { TOKENS, type TokenMeta } from "@/lib/contracts";
+import { TOKEN_LIST, TOKENS, type TokenMeta } from "@/lib/contracts";
 import { formatAmount } from "@/lib/utils";
 
 const DEMO_AMOUNT = "10000"; // 10,000 of each token — clean demo math
 const STEPS = [
-  { id: 1, title: "Mint mock tokens", body: "Get 10k of each LATAM stable from the faucet." },
+  { id: 1, title: "Mint mock tokens", body: "Get 10k of each LATAM stable from both Ripio and Twin." },
   { id: 2, title: "Deposit to SLP", body: "Drop 10k USDC into the shared liquidity pool." },
-  { id: 3, title: "Back the LATAM pools", body: "Declare your capital as JIT liquidity for wARS, wBRL and wMXN." },
-  { id: 4, title: "Watch fees accrue", body: "Run a few swaps. Same deposit, three markets, fees from all of them." },
+  { id: 3, title: "Back 6 pools at once", body: "Declare your capital as JIT liquidity for all 3 Ripio + 3 Twin markets." },
+  { id: 4, title: "Watch fees accrue", body: "Same deposit, six markets, fees from all of them." },
 ] as const;
 
 // The step-by-step action panel that walks a connected user through the demo
@@ -40,7 +40,10 @@ export function ActionPanel() {
       BigInt(10_000) * 10n ** BigInt(TOKENS.usdc.decimals);
 
   async function handleMintAll() {
-    for (const token of [TOKENS.usdc, TOKENS.wars, TOKENS.wbrl, TOKENS.wmxn]) {
+    // Mint USDC + all 3 Ripio + all 3 Twin in sequence. Each call is a
+    // separate tx — bundling would be nicer but adds an EIP-7702 / smart-
+    // wallet dependency we don't need for the hackathon.
+    for (const token of TOKEN_LIST) {
       await mint.mint(token, DEMO_AMOUNT);
     }
     await usdcWallet.refetch();
@@ -170,7 +173,7 @@ function StepButton({
         disabled={jitBusy}
         className="rounded-full bg-cyan px-4 py-2 text-xs font-semibold text-black transition hover:bg-cyan-dim disabled:opacity-60"
       >
-        {jitBusy ? "Signing…" : "Back 3 pools"}
+        {jitBusy ? "Signing…" : "Back 6 pools"}
       </button>
     );
   }
