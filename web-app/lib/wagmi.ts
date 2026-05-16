@@ -6,9 +6,12 @@ import { injected } from "wagmi/connectors";
 // connector picks up Core Wallet, MetaMask, Rabby, etc. — anything that
 // implements EIP-1193. No WalletConnect / Privy / RainbowKit dependency,
 // which keeps the bundle and the surface area minimal for the hackathon.
+// publicnode serves unfinalized state. The official api.avax-test.network
+// endpoint rejects pending-block reads with "cannot query unfinalized data",
+// which breaks wagmi's read-after-write pattern in the deposit flow.
 export const FUJI_RPC =
   process.env.NEXT_PUBLIC_FUJI_RPC_URL ??
-  "https://api.avax-test.network/ext/bc/C/rpc";
+  "https://avalanche-fuji-c-chain.publicnode.com";
 
 export const wagmiConfig = createConfig({
   chains: [avalancheFuji],
