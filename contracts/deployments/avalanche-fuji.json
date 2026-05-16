@@ -1,31 +1,32 @@
 {
   "chainId": 43113,
   "chain": "avalanche-fuji",
-  "deployBlock": 55429180,
+  "deployBlock": 55441210,
   "deployer": "0x235713C4CA6A8cd2adc0333F64d1b453BfCdBbfd",
-  "poolManager": "0xf834B15FfD886559da9811f15496bBDB2Af9830d",
-  "slp": "0x347A8b1aD0CA5Fb3dAd5dA3D2DdEa50b23d07A15",
-  "slpImpl": "0x5B2B62A2516bFc1C71b8F8f2fc9278BD5Bb285F4",
-  "aqua0Hook": "0xC38167DE3989Fc85512A50EaB2F91fc5Ee1980C0",
-  "hookFactory": "0x4aF0bC87e7ac8216598A3fC95a0B80E1EE079E87",
-  "liquidityRouter": "0xe40cA809D78a84A08321Bb339DdFDEA5FeEe8dA7",
+  "poolManager": "0xa0E6d121Cb492E0F8A862109701FfC59CE9f2839",
+  "slp": "0xd0508EAA61bEd6e31299d56d3cDf4Be8F53863D4",
+  "slpImpl": "0x36f9203543925cbcfB59dAE964d5185B1A90119c",
+  "aqua0Hook": "0x43EbC33AC48f3FDf9aeF56a40e31F02D880280C0",
+  "hookFactory": "0xd9C0Fa78334D12d1454860802FDAe08Bc053875f",
+  "liquidityRouter": "0xa3e4EC3fcd8e854437E69570BA385fD172830a2D",
   "backendSigner": "0x235713C4CA6A8cd2adc0333F64d1b453BfCdBbfd",
   "tokens": {
-    "usdc":  "0x8137A1990f076c781384343FBd691E1dC924d9f6",
-    "wars":  "0x18557319e659F2E28893A0ac6b06722F04088A6A",
-    "wbrl":  "0x53f33805d01Fe67abC2CAc9a88A779131687F95E",
-    "wmxn":  "0xe97F0CEEBBd7889eC94b3C259284D51932cc7D0E",
-    "nuars": "0xA1d694A0eC402C1aAEAc446E4D6CAa05fb38f20c",
-    "nubrl": "0x30C8EA542B635ffCC06005374aD4a6b2376296E0",
-    "numxn": "0xDAD6CEa7B8a6Bf791713bD7585A408c76a853d37"
+    "usdc": "0xffd244F82765C12c689e47081fE5534f5395b87B",
+    "wars": "0x03B04eFAc7277a297Ff691C5a6d29C10084459BB",
+    "wbrl": "0x2880d49F24A6AA9689F07C2C128757EFB9694851",
+    "wmxn": "0x63885Ed2448aF937ef24adE249DA42e491210684",
+    "arst": "0x33BC928d9adEb922a651ee6A7EA5Bc6f115f51DB",
+    "brlt": "0xAa2B6da0897Ae108227f298ee096Cd2e8441BC4a",
+    "mxnt": "0x4ffED179B94ebFBec4196E73F3823B2f23e44AF7"
   },
   "pools": {
-    "wars_usdc_aqua0":   "0xf607a4f05160fb47d7dacf20bc3501f690c76d8fccfdc7b6ae4eeb49f41c53c0",
-    "wbrl_usdc_aqua0":   "0x233e4a9d031b1b1faebc35ecd96ea60010754424247d60d302b4a5c1f00ce1b0",
-    "wmxn_usdc_aqua0":   "0x80fd88bbc92a87dc5d8b8fb0fdd14bb3af75fbc3802fb90c68dc607c1bdabd06",
-    "nuars_usdc_aqua0":  "0x5acd1f52ed4af4ca2c2b0af5779c71723d3b625626dafc12dd042d71858cc40a",
-    "nubrl_usdc_aqua0":  "0xd67985e4011330efc242e939f6a4f8782f3bfd4de3886f531c864089fb41d51e",
-    "numxn_usdc_aqua0":  "0xd07d5ab620afb35a92ebf3d740f6fa03923bcdcbf7066e5bafbde33e14eb9627",
-    "wars_usdc_vanilla": "0x73624a355b1887e248018b471c177c069747952e6cf7733a6d1154d9eb83a7b1"
+    "wars_usdc_aqua0":   "0xd8f62c0306f283d672b02ba456ea739e652ec2814ff820934e5ac7596726b63b",
+    "wbrl_usdc_aqua0":   "0x4db7dfe9bb5f6979f1f3841759016531770423faca70bdbca7d0fdcbcbb899a0",
+    "wmxn_usdc_aqua0":   "0x183b8492182f25791c2a3198334eebeecc1a6f0fde24b4440dad3c2bc08beb7d",
+    "arst_usdc_aqua0":   "0x2ac7b9eba1f29435f01c326ae77e0ae5ad08df54756c83cc8523de5a3f460f34",
+    "brlt_usdc_aqua0":   "0xaaaaacd61b32d5f528b3904d0586727090619e28823090bd64993e46624b8b26",
+    "mxnt_usdc_aqua0":   "0x047f5ebafb6764ff2a567a41980c910559bd941c64e4f2f389a7dfa1460f4fbb",
+    "wars_usdc_vanilla": "0x32539f5dd9519f3b61f2cbfde4dc99abaad98da15701ac751465ea1e7df7291e",
+    "wbrl_usdc_vanilla": "0x6ee5c37291fa20922dacf82bcb18ab4d33a4b2866e47f711ed44f2c129d53499"
   }
 }

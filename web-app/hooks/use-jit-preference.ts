@@ -73,9 +73,9 @@ export function useJitPreference() {
       FUJI_DEPLOYMENT.pools.warsUsdcAqua0,
       FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0,
       FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0,
-      FUJI_DEPLOYMENT.pools.nuarsUsdcAqua0,
-      FUJI_DEPLOYMENT.pools.nubrlUsdcAqua0,
-      FUJI_DEPLOYMENT.pools.numxnUsdcAqua0,
+      FUJI_DEPLOYMENT.pools.arstUsdcAqua0,
+      FUJI_DEPLOYMENT.pools.brltUsdcAqua0,
+      FUJI_DEPLOYMENT.pools.mxntUsdcAqua0,
     ];
     for (const poolId of pools) {
       await setPreference({

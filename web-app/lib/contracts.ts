@@ -11,37 +11,41 @@ import type { Address } from "viem";
 
 export const FUJI_DEPLOYMENT = {
   chainId: 43113,
-  // Deployed 2026-05-16 from script/DeployFuji.s.sol. Initial deployer
-  // = SLP owner = backend signer = 0x235713C4CA6A8cd2adc0333F64d1b453BfCdBbfd
-  poolManager:     "0xf834B15FfD886559da9811f15496bBDB2Af9830d" as Address,
-  slp:             "0x347A8b1aD0CA5Fb3dAd5dA3D2DdEa50b23d07A15" as Address,
-  aqua0Hook:       "0xC38167DE3989Fc85512A50EaB2F91fc5Ee1980C0" as Address,
-  liquidityRouter: "0xe40cA809D78a84A08321Bb339DdFDEA5FeEe8dA7" as Address,
+  // Deployed 2026-05-16 from script/DeployFuji.s.sol (v2 — Twin tickers
+  // ARSt/BRLt/MXNt + second vanilla baseline pool). Deployer = SLP owner =
+  // backend signer = 0x235713C4CA6A8cd2adc0333F64d1b453BfCdBbfd.
+  // Old v1 deployment lives at contracts/deployments/avalanche-fuji-v1.json.
+  poolManager:     "0xa0E6d121Cb492E0F8A862109701FfC59CE9f2839" as Address,
+  slp:             "0xd0508EAA61bEd6e31299d56d3cDf4Be8F53863D4" as Address,
+  aqua0Hook:       "0x43EbC33AC48f3FDf9aeF56a40e31F02D880280C0" as Address,
+  liquidityRouter: "0xa3e4EC3fcd8e854437E69570BA385fD172830a2D" as Address,
   tokens: {
-    usdc:  "0x8137A1990f076c781384343FBd691E1dC924d9f6" as Address,
+    usdc: "0xffd244F82765C12c689e47081fE5534f5395b87B" as Address,
     // Ripio family — live on Ethereum + Base + World today, Avalanche on roadmap.
-    wars:  "0x18557319e659F2E28893A0ac6b06722F04088A6A" as Address,
-    wbrl:  "0x53f33805d01Fe67abC2CAc9a88A779131687F95E" as Address,
-    wmxn:  "0xe97F0CEEBBd7889eC94b3C259284D51932cc7D0E" as Address,
-    // Twin family (ex-Num) — Avalanche-native.
-    nuars: "0xA1d694A0eC402C1aAEAc446E4D6CAa05fb38f20c" as Address,
-    nubrl: "0x30C8EA542B635ffCC06005374aD4a6b2376296E0" as Address,
-    numxn: "0xDAD6CEa7B8a6Bf791713bD7585A408c76a853d37" as Address,
+    wars: "0x03B04eFAc7277a297Ff691C5a6d29C10084459BB" as Address,
+    wbrl: "0x2880d49F24A6AA9689F07C2C128757EFB9694851" as Address,
+    wmxn: "0x63885Ed2448aF937ef24adE249DA42e491210684" as Address,
+    // Twin family (ex-Num) — Avalanche-native. Post-rebrand `t` suffix.
+    arst: "0x33BC928d9adEb922a651ee6A7EA5Bc6f115f51DB" as Address,
+    brlt: "0xAa2B6da0897Ae108227f298ee096Cd2e8441BC4a" as Address,
+    mxnt: "0x4ffED179B94ebFBec4196E73F3823B2f23e44AF7" as Address,
   },
   pools: {
     // 6 Aqua0-enabled pools — every swap routes through Aqua0Hook, which
     // pulls SLP liquidity into the pool transient-style for the swap window.
     // Ripio family
-    warsUsdcAqua0:  "0xf607a4f05160fb47d7dacf20bc3501f690c76d8fccfdc7b6ae4eeb49f41c53c0" as `0x${string}`,
-    wbrlUsdcAqua0:  "0x233e4a9d031b1b1faebc35ecd96ea60010754424247d60d302b4a5c1f00ce1b0" as `0x${string}`,
-    wmxnUsdcAqua0:  "0x80fd88bbc92a87dc5d8b8fb0fdd14bb3af75fbc3802fb90c68dc607c1bdabd06" as `0x${string}`,
+    warsUsdcAqua0: "0xd8f62c0306f283d672b02ba456ea739e652ec2814ff820934e5ac7596726b63b" as `0x${string}`,
+    wbrlUsdcAqua0: "0x4db7dfe9bb5f6979f1f3841759016531770423faca70bdbca7d0fdcbcbb899a0" as `0x${string}`,
+    wmxnUsdcAqua0: "0x183b8492182f25791c2a3198334eebeecc1a6f0fde24b4440dad3c2bc08beb7d" as `0x${string}`,
     // Twin family
-    nuarsUsdcAqua0: "0x5acd1f52ed4af4ca2c2b0af5779c71723d3b625626dafc12dd042d71858cc40a" as `0x${string}`,
-    nubrlUsdcAqua0: "0xd67985e4011330efc242e939f6a4f8782f3bfd4de3886f531c864089fb41d51e" as `0x${string}`,
-    numxnUsdcAqua0: "0xd07d5ab620afb35a92ebf3d740f6fa03923bcdcbf7066e5bafbde33e14eb9627" as `0x${string}`,
-    // 1 vanilla V4 pool (no hook) — for the "look how much fewer fees a
-    // traditional LP earns" comparison in the dashboard.
-    warsUsdcVanilla: "0x73624a355b1887e248018b471c177c069747952e6cf7733a6d1154d9eb83a7b1" as `0x${string}`,
+    arstUsdcAqua0: "0x2ac7b9eba1f29435f01c326ae77e0ae5ad08df54756c83cc8523de5a3f460f34" as `0x${string}`,
+    brltUsdcAqua0: "0xaaaaacd61b32d5f528b3904d0586727090619e28823090bd64993e46624b8b26" as `0x${string}`,
+    mxntUsdcAqua0: "0x047f5ebafb6764ff2a567a41980c910559bd941c64e4f2f389a7dfa1460f4fbb" as `0x${string}`,
+    // 2 vanilla V4 pools (no hook) — baseline for the dashboard's comparison.
+    // The pitch story: '20k split across these 2 traditional pools earns N
+    // fees; the same 20k in the SLP backs all 6 aqua0 pools.'
+    warsUsdcVanilla: "0x32539f5dd9519f3b61f2cbfde4dc99abaad98da15701ac751465ea1e7df7291e" as `0x${string}`,
+    wbrlUsdcVanilla: "0x6ee5c37291fa20922dacf82bcb18ab4d33a4b2866e47f711ed44f2c129d53499" as `0x${string}`,
   },
 } as const;
 
@@ -98,25 +102,25 @@ export const TOKENS: Record<keyof typeof FUJI_DEPLOYMENT.tokens, TokenMeta> = {
     issuer: "ripio",
   },
   // ─── Twin family ─────────────────────────────────────────────────────
-  nuars: {
-    address: FUJI_DEPLOYMENT.tokens.nuars,
-    symbol: "nuARS",
+  arst: {
+    address: FUJI_DEPLOYMENT.tokens.arst,
+    symbol: "ARSt",
     name: "Twin Argentine Peso",
     decimals: 6,
     accent: "#9DBBE0", // Slightly desaturated AR blue
     issuer: "twin",
   },
-  nubrl: {
-    address: FUJI_DEPLOYMENT.tokens.nubrl,
-    symbol: "nuBRL",
+  brlt: {
+    address: FUJI_DEPLOYMENT.tokens.brlt,
+    symbol: "BRLt",
     name: "Twin Brazilian Real",
     decimals: 6,
     accent: "#33B97A", // Slightly desaturated BR green
     issuer: "twin",
   },
-  numxn: {
-    address: FUJI_DEPLOYMENT.tokens.numxn,
-    symbol: "nuMXN",
+  mxnt: {
+    address: FUJI_DEPLOYMENT.tokens.mxnt,
+    symbol: "MXNt",
     name: "Twin Mexican Peso",
     decimals: 6,
     accent: "#DC4458", // Slightly desaturated MX red
@@ -129,9 +133,9 @@ export const TOKEN_LIST: TokenMeta[] = [
   TOKENS.wars,
   TOKENS.wbrl,
   TOKENS.wmxn,
-  TOKENS.nuars,
-  TOKENS.nubrl,
-  TOKENS.numxn,
+  TOKENS.arst,
+  TOKENS.brlt,
+  TOKENS.mxnt,
 ];
 
 // Just the 6 aqua0-pool tokens, USDC excluded — what the LP "backs" via
@@ -140,9 +144,73 @@ export const LATAM_STABLES: TokenMeta[] = [
   TOKENS.wars,
   TOKENS.wbrl,
   TOKENS.wmxn,
-  TOKENS.nuars,
-  TOKENS.nubrl,
-  TOKENS.numxn,
+  TOKENS.arst,
+  TOKENS.brlt,
+  TOKENS.mxnt,
+];
+
+// ============================================================================
+// Markets — the unit the /strategies page renders. Each "market" represents a
+// single FX pair (ARS, BRL, MXN) with both issuers' tokens. The LP doesn't
+// pick between Ripio's wARS and Twin's ARSt — Aqua0 backs BOTH from the same
+// SLP deposit. That's the issuer-agnostic pitch.
+// ============================================================================
+
+export interface MarketRoute {
+  /** Stable token on the non-USDC side of the pool. */
+  token: TokenMeta;
+  poolId: `0x${string}`;
+}
+
+export interface Market {
+  /** Display label, e.g. "Argentine Peso". */
+  label: string;
+  /** Three-letter ISO code, e.g. "ARS". */
+  code: "ARS" | "BRL" | "MXN";
+  /** Flag emoji for the header. */
+  flag: string;
+  /** Both issuer routes for this FX market. */
+  routes: MarketRoute[];
+}
+
+export const MARKETS: Market[] = [
+  {
+    label: "Argentine Peso",
+    code: "ARS",
+    flag: "🇦🇷",
+    routes: [
+      { token: TOKENS.wars, poolId: FUJI_DEPLOYMENT.pools.warsUsdcAqua0 },
+      { token: TOKENS.arst, poolId: FUJI_DEPLOYMENT.pools.arstUsdcAqua0 },
+    ],
+  },
+  {
+    label: "Brazilian Real",
+    code: "BRL",
+    flag: "🇧🇷",
+    routes: [
+      { token: TOKENS.wbrl, poolId: FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0 },
+      { token: TOKENS.brlt, poolId: FUJI_DEPLOYMENT.pools.brltUsdcAqua0 },
+    ],
+  },
+  {
+    label: "Mexican Peso",
+    code: "MXN",
+    flag: "🇲🇽",
+    routes: [
+      { token: TOKENS.wmxn, poolId: FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0 },
+      { token: TOKENS.mxnt, poolId: FUJI_DEPLOYMENT.pools.mxntUsdcAqua0 },
+    ],
+  },
+];
+
+export interface VanillaPool {
+  token: TokenMeta;
+  poolId: `0x${string}`;
+}
+
+export const VANILLA_POOLS: VanillaPool[] = [
+  { token: TOKENS.wars, poolId: FUJI_DEPLOYMENT.pools.warsUsdcVanilla },
+  { token: TOKENS.wbrl, poolId: FUJI_DEPLOYMENT.pools.wbrlUsdcVanilla },
 ];
 
 // ============================================================================

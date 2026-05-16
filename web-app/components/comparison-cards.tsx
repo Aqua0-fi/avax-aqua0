@@ -21,9 +21,9 @@ export function ComparisonCards() {
     { token: TOKENS.wmxn, fees: 51 },
   ];
   const twin = [
-    { token: TOKENS.nuars, fees: 79 },
-    { token: TOKENS.nubrl, fees: 58 },
-    { token: TOKENS.numxn, fees: 44 },
+    { token: TOKENS.arst, fees: 79 },
+    { token: TOKENS.brlt, fees: 58 },
+    { token: TOKENS.mxnt, fees: 44 },
   ];
   const vanillaFees = ripio[0].fees;
   const aqua0Fees = [...ripio, ...twin].reduce((sum, m) => sum + m.fees, 0);
