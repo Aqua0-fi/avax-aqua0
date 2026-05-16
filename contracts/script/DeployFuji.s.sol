@@ -194,8 +194,13 @@ contract DeployFuji is Script {
     function _deployV4Core(address deployer) internal {
         // vm.deployCode compiles + deploys PoolManager from its artifact path,
         // sidestepping the 0.8.26 ↔ 0.8.34 pragma conflict that would arise
-        // from `new PoolManager(...)` in this script.
-        address pm = deployCode("PoolManager.sol:PoolManager", abi.encode(deployer));
+        // from `new PoolManager(...)` in this script. The artifact key uses
+        // the contract NAME ('PoolManager') not the source path — using just
+        // 'PoolManager.sol:PoolManager' fails on this layout because the
+        // artifact's recorded source is 'lib/v4-core/src/PoolManager.sol'.
+        // The name-only form is unambiguous so long as no other contract in
+        // the build is also named PoolManager.
+        address pm = deployCode("PoolManager", abi.encode(deployer));
         poolManager = IPoolManager(pm);
         console.log("[1/8] PoolManager:    ", pm);
     }
