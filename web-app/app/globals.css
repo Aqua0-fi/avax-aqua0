@@ -2,10 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ───────────────────────── Design tokens ──────────────────────────────────
+   Mirrors the production aqua0/web-app palette (oklch values flattened to
+   hex for Tailwind v3 compatibility). Keep this in sync with that codebase
+   so a future merge isn't a colour-by-colour audit. */
+:root {
+  --background: #0a0a0a;          /* Near-black canvas */
+  --foreground: #fafafa;          /* Almost-white text */
+  --card: #0d0d0d;                /* Solid card surface — distinguishes primary content from background */
+  --muted: #1a1a1a;
+  --border: #1f1f1f;
+  --ring: #7FE5E5;                /* Brand cyan */
+  --primary: #7FE5E5;             /* CTA / accent */
+  --primary-dim: #5dd4d4;
+  --radius: 0.75rem;              /* 12px — Kraken-style professional radius */
+}
+
 html,
 body {
-  background: #000;
-  color: #fff;
+  background: var(--background);
+  color: var(--foreground);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -13,10 +29,64 @@ body {
   box-sizing: border-box;
 }
 
-/* Subtle cyan glow utility used on CTAs and active states */
+/* ───────────────────────── Typography defaults ────────────────────────────
+   Coinbase / Kraken style: tight tracking on display headings + bold weight
+   anchor. h1 is the page-level title; h2/h3 are section / card titles. */
+h1 {
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+h2 {
+  letter-spacing: -0.025em;
+  font-weight: 600;
+}
+h3 {
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+/* Pointer cursor for anything interactive — small DX win that compounds. */
+button:not(:disabled),
+a,
+[role="button"]:not(:disabled),
+[type="button"]:not(:disabled),
+[type="submit"]:not(:disabled),
+select,
+summary,
+[tabindex]:not([tabindex="-1"]) {
+  cursor: pointer;
+}
+
+/* ───────────────────────── Cyan glow utilities ────────────────────────────
+   Used on CTAs, active indicators, and the live-pulse dot in the navbar. */
 .cyan-glow {
   box-shadow: 0 0 24px rgba(127, 229, 229, 0.35);
 }
 .cyan-glow-soft {
   box-shadow: 0 0 18px rgba(127, 229, 229, 0.18);
+}
+
+/* ───────────────────────── Animations ─────────────────────────────────────
+   Minimal subset of tw-animate-css used by dropdowns / mobile menu. Keeping
+   it inline so we don't drag a whole CSS package into the bundle. */
+@keyframes aqua-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes aqua-zoom-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes aqua-slide-in-from-top {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: aqua-fade-in 150ms ease-out both;
+}
+.animate-zoom-in {
+  animation: aqua-zoom-in 150ms ease-out both;
+}
+.animate-slide-down {
+  animation: aqua-slide-in-from-top 200ms ease-out both;
 }

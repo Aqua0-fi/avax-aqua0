@@ -75,8 +75,8 @@ export function TokenSelect({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[260px] overflow-hidden rounded-2xl border border-white/10 bg-black/95 shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-md">
-          <div className="border-b border-white/10 px-3 py-2 text-[9.5px] uppercase tracking-[0.22em] text-white/40">
+        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[260px] overflow-hidden rounded-xl border border-white/10 bg-card p-1 shadow-[0_10px_40px_rgba(0,0,0,0.6)] animate-zoom-in">
+          <div className="border-b border-white/[0.06] px-3 py-2 text-[9.5px] uppercase tracking-[0.22em] text-white/40">
             Select token
           </div>
           <ul className="max-h-[320px] overflow-y-auto py-1">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
+import { AlphaBackground } from "@/components/alpha-background";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -11,7 +12,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Aqua0 — Avalanche Edition",
   description:
-    "Cross-margin prime brokerage for LATAM stablecoins. One deposit. Multiple pools. 3× the fees.",
+    "Cross-margin prime brokerage for LATAM stablecoins. One deposit. Every market. Built as a Uniswap V4 hook on Avalanche.",
 };
 
 export default function RootLayout({
@@ -21,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={spaceGrotesk.variable}>
-      <body className="font-sans antialiased">
+      <body className="relative min-h-[100dvh] font-sans antialiased">
+        {/* Ambient pointillism canvas — fixed to the viewport, sits at
+            z-0 behind every page surface. */}
+        <AlphaBackground />
         <Providers>{children}</Providers>
       </body>
     </html>

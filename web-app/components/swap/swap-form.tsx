@@ -25,11 +25,11 @@ import { TokenSelect } from "./token-select";
 // honest signalling for a judge clicking around the demo.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const FEE_BPS = 30; // 0.30% V4 pool fee, in basis points (3000 ppm = 30 bps)
+const FEE_BPS = 30; // 0.30% V4 pool fee (3000 ppm = 30 bps)
 const BPS_DENOM = 10_000n;
 
-// Maps each LATAM stablecoin symbol → its aqua0 pool ID. Keeps the lookup
-// explicit instead of string-mashing from symbol to FUJI_DEPLOYMENT.pools keys.
+// Maps each LATAM stablecoin symbol → its aqua0 pool ID. Explicit lookup
+// instead of string-mashing from symbol to FUJI_DEPLOYMENT.pools keys.
 const AQUA0_POOL_BY_LATAM: Record<string, `0x${string}`> = {
   wARS: FUJI_DEPLOYMENT.pools.warsUsdcAqua0,
   wBRL: FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0,
@@ -51,7 +51,6 @@ export function SwapForm() {
   const [slippageBps, setSlippageBps] = useState<number>(50);
 
   // ── Pair validity + pool routing ─────────────────────────────────────────
-  // Every aqua0 pool is USDC <-> LATAM. LATAM <-> LATAM has no direct pool.
   const route = useMemo(() => resolveRoute(fromToken, toToken), [fromToken, toToken]);
 
   // ── Amount parsing → bigint at fromToken.decimals precision ──────────────
@@ -60,9 +59,8 @@ export function SwapForm() {
     [amountStr, fromToken.decimals],
   );
 
-  // ── Client-side quote: 1:1 pools at 0.30% fee. Real V4Quoter wiring will
-  // tighten this once the on-chain swap router lands. Inputs and outputs are
-  // both 6-decimal mocks so no decimal reshaping needed.
+  // Client-side quote: 1:1 pools at 0.30% fee. Real V4Quoter wiring tightens
+  // this once the on-chain swap router lands.
   const quotedOutRaw = useMemo(() => {
     if (!amountInRaw || !route) return 0n;
     return (amountInRaw * (BPS_DENOM - BigInt(FEE_BPS))) / BPS_DENOM;
@@ -73,7 +71,7 @@ export function SwapForm() {
     return (quotedOutRaw * (BPS_DENOM - BigInt(slippageBps))) / BPS_DENOM;
   }, [quotedOutRaw, slippageBps]);
 
-  // ── Wallet balance for the "from" side ──────────────────────────────────
+  // ── Wallet balances ──────────────────────────────────────────────────────
   const fromBalance = useWalletBalance(fromToken);
   const toBalance = useWalletBalance(toToken);
 
@@ -90,14 +88,9 @@ export function SwapForm() {
 
   function handleFromSelect(token: TokenMeta) {
     setFromToken(token);
-    // Auto-correct the "to" side if the new pair is invalid (e.g., user picks
-    // wARS on the "from" side while wBRL is on the "to" side — neither is
-    // USDC, so we'd have no pool). Snap the "to" side to USDC in that case.
     if (token.address !== TOKENS.usdc.address && toToken.address !== TOKENS.usdc.address) {
       setToToken(TOKENS.usdc);
     } else if (token.address === toToken.address) {
-      // Same token on both sides — flip the other to USDC if possible, or
-      // to the first LATAM stable.
       setToToken(token.address === TOKENS.usdc.address ? TOKENS.wars : TOKENS.usdc);
     }
   }
@@ -116,10 +109,7 @@ export function SwapForm() {
     setAmountStr(formatAmount(fromBalance.balance, fromToken.decimals, 6));
   }
 
-  // ── Filter the dropdown options so users can't pick invalid pairs ───────
-  // From-side: always all 7 tokens (the user can pick anything; the to-side
-  // gets snapped to a valid counterpart).
-  // To-side: filter based on whatever is currently in the from-side.
+  // Filter dropdowns so users can't pick invalid pairs.
   const toOptions = useMemo(() => {
     if (fromToken.address === TOKENS.usdc.address) {
       return TOKEN_LIST.filter((t) => t.address !== TOKENS.usdc.address);
@@ -127,8 +117,6 @@ export function SwapForm() {
     return [TOKENS.usdc];
   }, [fromToken]);
 
-  // Same idea inverted, so the From dropdown respects what's on the To side
-  // when that side is locked to a LATAM stable (i.e. From must then be USDC).
   const fromOptions = useMemo(() => {
     if (toToken.address === TOKENS.usdc.address) {
       return TOKEN_LIST;
@@ -136,7 +124,6 @@ export function SwapForm() {
     return [TOKENS.usdc];
   }, [toToken]);
 
-  // ── CTA copy + disabled state ───────────────────────────────────────────
   const cta = resolveCta({
     isConnected,
     route,
@@ -145,7 +132,7 @@ export function SwapForm() {
   });
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-sm sm:p-6">
+    <div className="rounded-xl border border-white/10 bg-card p-5 sm:p-6">
       {/* ── From side ──────────────────────────────────────────────────── */}
       <Panel
         label="From"
@@ -170,7 +157,7 @@ export function SwapForm() {
           type="button"
           onClick={handleFlip}
           aria-label="Flip swap direction"
-          className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-black/60 text-white/70 transition hover:border-cyan/50 hover:text-cyan"
+          className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-card text-white/70 transition-colors hover:border-cyan/50 hover:text-cyan"
         >
           ⇅
         </button>
@@ -210,7 +197,7 @@ export function SwapForm() {
               type="button"
               onClick={() => setSlippageBps(bps)}
               className={cn(
-                "flex-1 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition",
+                "flex-1 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition-colors",
                 slippageBps === bps
                   ? "border-cyan/60 bg-cyan/[0.08] text-cyan"
                   : "border-white/10 bg-white/[0.02] text-white/70 hover:border-white/25",
@@ -223,7 +210,7 @@ export function SwapForm() {
       </div>
 
       {/* ── Quote breakdown ───────────────────────────────────────────── */}
-      <dl className="mt-5 space-y-1.5 rounded-xl border border-white/8 bg-black/30 px-4 py-3 text-[12px]">
+      <dl className="mt-5 space-y-1.5 rounded-lg border border-white/[0.06] bg-white/[0.015] px-4 py-3 text-[12px]">
         <QuoteRow
           label="Route"
           value={
@@ -258,17 +245,17 @@ export function SwapForm() {
         disabled={cta.disabled}
         onClick={() => undefined /* on-chain wiring lands in follow-up */}
         className={cn(
-          "mt-5 w-full rounded-full px-6 py-3 text-sm font-semibold transition",
+          "mt-5 w-full rounded-lg px-6 py-2.5 text-[13px] font-semibold transition-colors",
           cta.disabled
             ? "cursor-not-allowed border border-white/10 bg-white/[0.03] text-white/40"
-            : "bg-cyan text-black hover:bg-cyan-dim cyan-glow hover:-translate-y-px",
+            : "bg-cyan text-black hover:bg-cyan-dim",
         )}
       >
         {cta.label}
       </button>
 
       {cta.subnote && (
-        <p className="mt-2.5 text-center text-[11px] text-white/45">
+        <p className="mt-2.5 text-center text-[11px] leading-[1.55] text-white/45">
           {cta.subnote}
         </p>
       )}
@@ -301,19 +288,19 @@ function Panel({
   onMax?: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-black/30 px-4 py-3.5">
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.015] px-4 py-3.5">
       <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-white/40">
         <span>{label}</span>
         <span>
           Balance{" "}
-          <span className="font-mono text-white/65 normal-case tracking-normal">
+          <span className="font-mono normal-case tracking-normal text-white/65">
             {balance}
           </span>
           {showMax && (
             <button
               type="button"
               onClick={onMax}
-              className="ml-2 rounded-md border border-cyan/30 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.18em] text-cyan transition hover:bg-cyan/10"
+              className="ml-2 rounded-md border border-cyan/30 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.18em] text-cyan transition-colors hover:bg-cyan/10"
             >
               Max
             </button>
@@ -329,11 +316,10 @@ function Panel({
           onChange={(e) => {
             if (readOnly || !onAmountChange) return;
             const v = e.target.value;
-            // Allow only digits + a single dot.
             if (v === "" || /^\d*\.?\d*$/.test(v)) onAmountChange(v);
           }}
           className={cn(
-            "flex-1 bg-transparent text-2xl font-bold tracking-tight outline-none placeholder:text-white/20",
+            "flex-1 bg-transparent text-[24px] font-bold tracking-[-0.02em] outline-none placeholder:text-white/20",
             readOnly && "text-white/80",
           )}
         />
@@ -386,7 +372,6 @@ interface Route {
 
 function resolveRoute(from: TokenMeta, to: TokenMeta): Route | null {
   const isUsdc = (t: TokenMeta) => t.address === TOKENS.usdc.address;
-  // Need exactly one USDC side.
   if (isUsdc(from) === isUsdc(to)) return null;
   const latam = isUsdc(from) ? to : from;
   const poolId = AQUA0_POOL_BY_LATAM[latam.symbol];

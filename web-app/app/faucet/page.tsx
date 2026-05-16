@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useAccount } from "wagmi";
-import { ConnectButton } from "@/components/connect-button";
+import { HeroWaves } from "@/components/aquatic-waves";
+import { DotMark } from "@/components/dot-mark";
+import { Navbar } from "@/components/navbar";
 import { useMint } from "@/hooks/use-mint";
 import { useWalletBalance } from "@/hooks/use-slp-balance";
 import { TOKEN_LIST, type TokenMeta } from "@/lib/contracts";
@@ -15,41 +17,32 @@ export default function FaucetPage() {
   const { mint, isPending } = useMint();
 
   return (
-    <main className="relative min-h-[100dvh] overflow-hidden bg-black text-white">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(127,229,229,0.10) 0%, rgba(0,0,0,0) 60%)",
-        }}
-      />
+    <div className="relative min-h-screen overflow-hidden">
+      <HeroWaves className="pointer-events-none absolute -top-8 right-0 hidden h-[240px] w-[520px] opacity-80 md:block" />
+      <Navbar />
 
-      <nav className="relative z-10 mx-auto flex max-w-[1180px] items-center justify-between px-6 py-6 sm:px-10">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="grid h-8 w-8 place-items-center rounded-md border border-white/10 bg-white/[0.04] text-sm font-bold text-cyan">
-            A
-          </span>
-          <span className="text-[15px] font-semibold tracking-[0.02em]">
-            Aqua0
-          </span>
-          <span className="ml-2 hidden text-[10px] uppercase tracking-[0.28em] text-cyan sm:inline">
-            · Faucet
-          </span>
-        </Link>
-        <ConnectButton />
-      </nav>
+      <div className="relative z-10 mx-auto max-w-3xl px-4 pt-12 pb-20 sm:px-6 lg:px-8">
+        {/* ── Hero ───────────────────────────────────────────────────── */}
+        <section className="mb-10">
+          <div className="mb-3 inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.3em] text-white/60">
+            <DotMark />
+            Faucet · Avalanche Fuji
+          </div>
+          <h1 className="text-[clamp(32px,4.5vw,52px)] font-bold leading-none tracking-[-0.025em] text-white">
+            Mock tokens
+          </h1>
+          <p className="mt-4 max-w-[560px] text-[14px] leading-[1.55] text-white/60">
+            Mint 10,000 of each LATAM-themed mock stablecoin. Public mint, no
+            rate limits — testnet only. The mainnet deploy will plug into{" "}
+            <span className="border-b border-dotted border-cyan/60 text-white">
+              Ripio&apos;s actual wARS/wBRL/wMXN
+            </span>{" "}
+            and Twin&apos;s ARSt/BRLt/MXNt issuance.
+          </p>
+        </section>
 
-      <section className="relative z-10 mx-auto max-w-[720px] px-6 pt-10 pb-20 sm:px-10">
-        <h1 className="text-[clamp(28px,4.2vw,44px)] font-extrabold tracking-[-0.025em]">
-          Mock tokens
-        </h1>
-        <p className="mt-3 max-w-[520px] text-[14.5px] leading-relaxed text-white/60">
-          Mint 10,000 of each LATAM-themed mock stablecoin. Public mint, no
-          rate limits — this is testnet only. Real Avalanche deployment will
-          plug into Ripio's actual wARS/wBRL/wMXN issuance.
-        </p>
-
-        <div className="mt-8 space-y-3">
+        {/* ── Token list ─────────────────────────────────────────────── */}
+        <div className="space-y-2.5">
           {TOKEN_LIST.map((token) => (
             <FaucetRow
               key={token.address}
@@ -62,13 +55,13 @@ export default function FaucetPage() {
         </div>
 
         <Link
-          href="/"
-          className="mt-8 inline-flex items-center gap-2 text-sm text-white/60 transition hover:text-cyan"
+          href="/profile"
+          className="mt-8 inline-flex items-center gap-2 text-[13px] text-white/60 transition-colors hover:text-cyan"
         >
-          ← Back to demo
+          ← Back to profile
         </Link>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
 
@@ -84,11 +77,18 @@ function FaucetRow({
   isConnected: boolean;
 }) {
   const { balance } = useWalletBalance(token);
+  const issuerLabel =
+    token.issuer === "anchor"
+      ? "Anchor"
+      : token.issuer === "ripio"
+      ? "Ripio"
+      : "Twin";
+
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 backdrop-blur-sm">
+    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-card px-5 py-4 transition-colors hover:border-white/30">
       <div className="flex items-center gap-4">
         <span
-          className="h-9 w-9 rounded-full ring-2 ring-black"
+          className="h-9 w-9 rounded-full"
           style={{
             background: token.accent,
             boxShadow: `0 0 12px ${token.accent}40`,
@@ -96,18 +96,20 @@ function FaucetRow({
         />
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold">{token.symbol}</span>
-            <span className="text-[12px] text-white/40">{token.name}</span>
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">
+              {token.symbol}
+            </span>
+            <span className="text-[11px] text-white/40">{issuerLabel}</span>
           </div>
-          <div className="mt-0.5 text-[12px] text-white/50">
-            Balance: {formatAmount(balance, token.decimals, 2)}
+          <div className="mt-0.5 font-mono text-[12px] text-white/50">
+            Balance {formatAmount(balance, token.decimals, 2)}
           </div>
         </div>
       </div>
       <button
         onClick={() => onMint()}
         disabled={!isConnected || isPending}
-        className="rounded-full bg-cyan px-4 py-2 text-xs font-semibold text-black transition hover:bg-cyan-dim disabled:opacity-50"
+        className="rounded-lg bg-cyan px-4 py-2 text-[12px] font-semibold text-black transition-colors hover:bg-cyan-dim disabled:opacity-50 disabled:hover:bg-cyan"
       >
         {isConnected ? `Mint ${FAUCET_AMOUNT}` : "Connect"}
       </button>

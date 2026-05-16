@@ -7,6 +7,9 @@ import { formatAmount } from "@/lib/utils";
 
 // Sum of USDC deposit + (for the LATAM stables) deposited treated 1:1 with
 // USD. Demo accounting — fine because all our 1:1 pools assume parity.
+//
+// Layout mirrors the production aqua0 hero metrics row: solid card surface,
+// 10px uppercase labels, 24px bold number, optional sub-label.
 export function KpiStrip() {
   const { isConnected } = useAccount();
   const usdc = useSLPBalance(TOKENS.usdc);
@@ -52,7 +55,7 @@ export function KpiStrip() {
       <Kpi
         label="Capital multiplier"
         value={placeholder ? "0×" : "6×"}
-        sub="vs 1 vanilla pool"
+        sub="vs vanilla LPing"
         tint="cyan"
       />
     </div>
@@ -72,17 +75,17 @@ function Kpi({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-4 backdrop-blur-sm ${
+      className={`rounded-xl border p-4 transition-colors ${
         tint === "cyan"
           ? "border-cyan/30 bg-cyan/[0.04]"
-          : "border-white/10 bg-white/[0.02]"
+          : "border-white/10 bg-card hover:border-white/20"
       }`}
     >
       <div className="text-[10px] uppercase tracking-[0.22em] text-white/40">
         {label}
       </div>
       <div
-        className={`mt-1 text-2xl font-extrabold tracking-tight ${
+        className={`mt-1.5 text-[24px] font-bold tracking-[-0.02em] ${
           tint === "cyan" ? "text-cyan" : "text-white"
         }`}
       >
