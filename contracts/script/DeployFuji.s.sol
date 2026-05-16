@@ -85,9 +85,16 @@ contract FujiHookFactory {
 // Tokens are 7 LATAM-themed mocks at 6 decimals each:
 //   - USDC                       (anchor)
 //   - wARS, wBRL, wMXN           (Ripio family)
-//   - nuARS, nuBRL, nuMXN        (Twin family — formerly Num Finance)
+//   - ARSt, BRLt, MXNt           (Twin family — formerly Num Finance)
 // Two issuers per region demonstrates the demo's key institutional pitch:
 // Aqua0 is issuer-agnostic, one SLP deposit backs Ripio AND Twin pools.
+//
+// Pools deployed (8 total):
+//   - 6 aqua0-enabled (3 Ripio + 3 Twin), all with Aqua0Hook attached
+//   - 2 vanilla baselines (wARS/USDC + wBRL/USDC, no hook). The demo's
+//     comparison: "20k fragmented across 2 vanilla pools" vs "20k in the
+//     SLP backing all 6 aqua0 pools at once".
+//
 // All pools are 1:1 for clean demo math; this is not a realistic ARS/USD
 // ratio but it makes the swap math trivial to follow in the demo video.
 //
@@ -144,15 +151,17 @@ contract DeployFuji is Script {
     // Ripio family — production deployments live on Eth + Base + World.
     address usdc; address wars; address wbrl; address wmxn;
     // Twin family — Avalanche-native LATAM stablecoin issuer (formerly Num).
-    address nuars; address nubrl; address numxn;
-    // 6 aqua0-enabled pools + 1 vanilla baseline.
+    // Tickers use the `t` suffix per Twin's post-rebrand convention.
+    address arst; address brlt; address mxnt;
+    // 6 aqua0-enabled pools + 2 vanilla baselines.
     bytes32 poolWarsUsdc;
     bytes32 poolWbrlUsdc;
     bytes32 poolWmxnUsdc;
-    bytes32 poolNuarsUsdc;
-    bytes32 poolNubrlUsdc;
-    bytes32 poolNumxnUsdc;
+    bytes32 poolArstUsdc;
+    bytes32 poolBrltUsdc;
+    bytes32 poolMxntUsdc;
     bytes32 poolWarsUsdcVanilla;
+    bytes32 poolWbrlUsdcVanilla;
 
     function run() external {
         require(block.chainid == FUJI_CHAIN_ID, "DeployFuji: must be on Avalanche Fuji (43113)");
@@ -219,38 +228,39 @@ contract DeployFuji is Script {
 
     function _deployTokens(address deployer) internal {
         // All mocks at 6 decimals — matches both Ripio's wARS/wBRL/wMXN and
-        // Twin's nuARS/nuBRL/nuMXN real-world formats. Deploying 1:1 mocks of
+        // Twin's ARSt/BRLt/MXNt real-world formats. Deploying 1:1 mocks of
         // both issuers shows that Aqua0 is issuer-agnostic — institutional LPs
         // can unify Ripio + Twin liquidity in a single SLP deposit.
-        usdc  = address(new MockERC20("Mock USD Coin",                "USDC",  6));
+        usdc = address(new MockERC20("Mock USD Coin",                "USDC", 6));
 
         // Ripio family
-        wars  = address(new MockERC20("Mock Ripio Argentine Peso",    "wARS",  6));
-        wbrl  = address(new MockERC20("Mock Ripio Brazilian Real",    "wBRL",  6));
-        wmxn  = address(new MockERC20("Mock Ripio Mexican Peso",      "wMXN",  6));
+        wars = address(new MockERC20("Mock Ripio Argentine Peso",    "wARS", 6));
+        wbrl = address(new MockERC20("Mock Ripio Brazilian Real",    "wBRL", 6));
+        wmxn = address(new MockERC20("Mock Ripio Mexican Peso",      "wMXN", 6));
 
-        // Twin family (ex-Num Finance, Avalanche-native)
-        nuars = address(new MockERC20("Mock Twin Argentine Peso",     "nuARS", 6));
-        nubrl = address(new MockERC20("Mock Twin Brazilian Real",     "nuBRL", 6));
-        numxn = address(new MockERC20("Mock Twin Mexican Peso",       "nuMXN", 6));
+        // Twin family (ex-Num Finance, Avalanche-native). Symbols use the
+        // post-rebrand `t` suffix.
+        arst = address(new MockERC20("Mock Twin Argentine Peso",     "ARSt", 6));
+        brlt = address(new MockERC20("Mock Twin Brazilian Real",     "BRLt", 6));
+        mxnt = address(new MockERC20("Mock Twin Mexican Peso",       "MXNt", 6));
 
-        // Mint 10M of each to deployer — covers pool seed (100k) + SLP seed
-        // (100k) + a generous buffer for demo testing.
-        MockERC20(usdc ).mint(deployer, DEPLOYER_MINT);
-        MockERC20(wars ).mint(deployer, DEPLOYER_MINT);
-        MockERC20(wbrl ).mint(deployer, DEPLOYER_MINT);
-        MockERC20(wmxn ).mint(deployer, DEPLOYER_MINT);
-        MockERC20(nuars).mint(deployer, DEPLOYER_MINT);
-        MockERC20(nubrl).mint(deployer, DEPLOYER_MINT);
-        MockERC20(numxn).mint(deployer, DEPLOYER_MINT);
+        // Mint 10M of each to deployer — covers pool seeds + SLP seed + a
+        // generous buffer for demo testing.
+        MockERC20(usdc).mint(deployer, DEPLOYER_MINT);
+        MockERC20(wars).mint(deployer, DEPLOYER_MINT);
+        MockERC20(wbrl).mint(deployer, DEPLOYER_MINT);
+        MockERC20(wmxn).mint(deployer, DEPLOYER_MINT);
+        MockERC20(arst).mint(deployer, DEPLOYER_MINT);
+        MockERC20(brlt).mint(deployer, DEPLOYER_MINT);
+        MockERC20(mxnt).mint(deployer, DEPLOYER_MINT);
 
         console.log("[2/8] USDC:           ", usdc);
-        console.log("      wARS  (Ripio):  ", wars);
-        console.log("      wBRL  (Ripio):  ", wbrl);
-        console.log("      wMXN  (Ripio):  ", wmxn);
-        console.log("      nuARS (Twin):   ", nuars);
-        console.log("      nuBRL (Twin):   ", nubrl);
-        console.log("      nuMXN (Twin):   ", numxn);
+        console.log("      wARS (Ripio):   ", wars);
+        console.log("      wBRL (Ripio):   ", wbrl);
+        console.log("      wMXN (Ripio):   ", wmxn);
+        console.log("      ARSt (Twin):    ", arst);
+        console.log("      BRLt (Twin):    ", brlt);
+        console.log("      MXNt (Twin):    ", mxnt);
     }
 
     // ───────────────────────── 3. SLP ─────────────────────────────
@@ -308,7 +318,7 @@ contract DeployFuji is Script {
     // ───────────────────────── 6. Approvals ───────────────────────
 
     function _approveAll() internal {
-        address[7] memory tokens = [usdc, wars, wbrl, wmxn, nuars, nubrl, numxn];
+        address[7] memory tokens = [usdc, wars, wbrl, wmxn, arst, brlt, mxnt];
         for (uint256 i = 0; i < tokens.length; i++) {
             MockERC20(tokens[i]).approve(routerAddr, type(uint256).max);
             MockERC20(tokens[i]).approve(slpProxy,   type(uint256).max);
@@ -324,20 +334,22 @@ contract DeployFuji is Script {
         // (Ripio, Twin) backed by the same SLP — the pitch is that an
         // institutional LP unifies BOTH supplies in one deposit.
         // Ripio family
-        poolWarsUsdc  = _initPool(wars,  usdc, IHooks(hookAddr), "wARS/USDC  (aqua0, ripio)");
-        poolWbrlUsdc  = _initPool(wbrl,  usdc, IHooks(hookAddr), "wBRL/USDC  (aqua0, ripio)");
-        poolWmxnUsdc  = _initPool(wmxn,  usdc, IHooks(hookAddr), "wMXN/USDC  (aqua0, ripio)");
+        poolWarsUsdc = _initPool(wars, usdc, IHooks(hookAddr), "wARS/USDC (aqua0, ripio)");
+        poolWbrlUsdc = _initPool(wbrl, usdc, IHooks(hookAddr), "wBRL/USDC (aqua0, ripio)");
+        poolWmxnUsdc = _initPool(wmxn, usdc, IHooks(hookAddr), "wMXN/USDC (aqua0, ripio)");
         // Twin family
-        poolNuarsUsdc = _initPool(nuars, usdc, IHooks(hookAddr), "nuARS/USDC (aqua0, twin)");
-        poolNubrlUsdc = _initPool(nubrl, usdc, IHooks(hookAddr), "nuBRL/USDC (aqua0, twin)");
-        poolNumxnUsdc = _initPool(numxn, usdc, IHooks(hookAddr), "nuMXN/USDC (aqua0, twin)");
+        poolArstUsdc = _initPool(arst, usdc, IHooks(hookAddr), "ARSt/USDC (aqua0, twin)");
+        poolBrltUsdc = _initPool(brlt, usdc, IHooks(hookAddr), "BRLt/USDC (aqua0, twin)");
+        poolMxntUsdc = _initPool(mxnt, usdc, IHooks(hookAddr), "MXNt/USDC (aqua0, twin)");
 
-        // 1 vanilla V4 pool — no hook. The dashboard's baseline: a traditional
-        // LP commits 10k to ONE pair (wARS/USDC) and earns only that pair's
-        // fees, while the same 10k in the SLP backs all 6 aqua0 pools.
-        poolWarsUsdcVanilla = _initPool(wars, usdc, IHooks(address(0)), "wARS/USDC  (vanilla, baseline)");
+        // 2 vanilla V4 pools — no hook. The demo's baseline split-screen:
+        // a traditional LP fragments 20k across TWO unrelated pairs (one ARS,
+        // one BRL), each earning only its own pair's fees. The same 20k
+        // deposited in the SLP backs all 6 aqua0 pools simultaneously.
+        poolWarsUsdcVanilla = _initPool(wars, usdc, IHooks(address(0)), "wARS/USDC (vanilla baseline)");
+        poolWbrlUsdcVanilla = _initPool(wbrl, usdc, IHooks(address(0)), "wBRL/USDC (vanilla baseline)");
 
-        console.log("[7/8] Pools initialized:  6 aqua0 + 1 vanilla baseline");
+        console.log("[7/8] Pools initialized:  6 aqua0 + 2 vanilla baselines");
     }
 
     function _initPool(address tokenA, address tokenB, IHooks hook, string memory label)
@@ -375,13 +387,13 @@ contract DeployFuji is Script {
         // One 100k deposit per token. Same capital that just seeded the V4
         // pools is now also sitting in the SLP — this is the demo's central
         // promise visualised on-chain.
-        slp.deposit(usdc,  DEPOSITOR_SEED, deployer);
-        slp.deposit(wars,  DEPOSITOR_SEED, deployer);
-        slp.deposit(wbrl,  DEPOSITOR_SEED, deployer);
-        slp.deposit(wmxn,  DEPOSITOR_SEED, deployer);
-        slp.deposit(nuars, DEPOSITOR_SEED, deployer);
-        slp.deposit(nubrl, DEPOSITOR_SEED, deployer);
-        slp.deposit(numxn, DEPOSITOR_SEED, deployer);
+        slp.deposit(usdc, DEPOSITOR_SEED, deployer);
+        slp.deposit(wars, DEPOSITOR_SEED, deployer);
+        slp.deposit(wbrl, DEPOSITOR_SEED, deployer);
+        slp.deposit(wmxn, DEPOSITOR_SEED, deployer);
+        slp.deposit(arst, DEPOSITOR_SEED, deployer);
+        slp.deposit(brlt, DEPOSITOR_SEED, deployer);
+        slp.deposit(mxnt, DEPOSITOR_SEED, deployer);
         console.log("[8/8] SLP seeded:      100k each x 7 tokens");
     }
 
@@ -405,13 +417,13 @@ contract DeployFuji is Script {
         json = string.concat(
             json,
             '  "tokens": {\n',
-            '    "usdc":  "', vm.toString(usdc),  '",\n',
-            '    "wars":  "', vm.toString(wars),  '",\n',
-            '    "wbrl":  "', vm.toString(wbrl),  '",\n',
-            '    "wmxn":  "', vm.toString(wmxn),  '",\n',
-            '    "nuars": "', vm.toString(nuars), '",\n',
-            '    "nubrl": "', vm.toString(nubrl), '",\n',
-            '    "numxn": "', vm.toString(numxn), '"\n',
+            '    "usdc": "', vm.toString(usdc), '",\n',
+            '    "wars": "', vm.toString(wars), '",\n',
+            '    "wbrl": "', vm.toString(wbrl), '",\n',
+            '    "wmxn": "', vm.toString(wmxn), '",\n',
+            '    "arst": "', vm.toString(arst), '",\n',
+            '    "brlt": "', vm.toString(brlt), '",\n',
+            '    "mxnt": "', vm.toString(mxnt), '"\n',
             "  },\n"
         );
         json = string.concat(
@@ -420,10 +432,11 @@ contract DeployFuji is Script {
             '    "wars_usdc_aqua0":   "', vm.toString(poolWarsUsdc),         '",\n',
             '    "wbrl_usdc_aqua0":   "', vm.toString(poolWbrlUsdc),         '",\n',
             '    "wmxn_usdc_aqua0":   "', vm.toString(poolWmxnUsdc),         '",\n',
-            '    "nuars_usdc_aqua0":  "', vm.toString(poolNuarsUsdc),        '",\n',
-            '    "nubrl_usdc_aqua0":  "', vm.toString(poolNubrlUsdc),        '",\n',
-            '    "numxn_usdc_aqua0":  "', vm.toString(poolNumxnUsdc),        '",\n',
-            '    "wars_usdc_vanilla": "', vm.toString(poolWarsUsdcVanilla),  '"\n',
+            '    "arst_usdc_aqua0":   "', vm.toString(poolArstUsdc),         '",\n',
+            '    "brlt_usdc_aqua0":   "', vm.toString(poolBrltUsdc),         '",\n',
+            '    "mxnt_usdc_aqua0":   "', vm.toString(poolMxntUsdc),         '",\n',
+            '    "wars_usdc_vanilla": "', vm.toString(poolWarsUsdcVanilla),  '",\n',
+            '    "wbrl_usdc_vanilla": "', vm.toString(poolWbrlUsdcVanilla),  '"\n',
             "  }\n",
             "}"
         );
