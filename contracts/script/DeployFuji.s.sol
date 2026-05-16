@@ -192,15 +192,25 @@ contract DeployFuji is Script {
     // ───────────────────────── 1. v4-core ─────────────────────────
 
     function _deployV4Core(address deployer) internal {
-        // vm.deployCode compiles + deploys PoolManager from its artifact path,
-        // sidestepping the 0.8.26 ↔ 0.8.34 pragma conflict that would arise
-        // from `new PoolManager(...)` in this script. The artifact key uses
-        // the contract NAME ('PoolManager') not the source path — using just
-        // 'PoolManager.sol:PoolManager' fails on this layout because the
-        // artifact's recorded source is 'lib/v4-core/src/PoolManager.sol'.
-        // The name-only form is unambiguous so long as no other contract in
-        // the build is also named PoolManager.
-        address pm = deployCode("PoolManager", abi.encode(deployer));
+        // We can't `new PoolManager(deployer)` here — PoolManager is pinned to
+        // solc 0.8.26 and the rest of Aqua0 uses ^0.8.34, so importing it
+        // breaks the version constraint. `vm.deployCode("PoolManager")` also
+        // refuses to find the artifact in this multi-pragma build (some
+        // resolver quirk with the lib/v4-core source path).
+        //
+        // Workaround: read the artifact JSON straight off disk, extract the
+        // creation bytecode, append the constructor arg, and CREATE. The
+        // foundry.toml grants ./out read access for exactly this reason.
+        string memory json = vm.readFile("out/PoolManager.sol/PoolManager.json");
+        bytes memory creationCode = vm.parseJsonBytes(json, ".bytecode.object");
+        bytes memory initCode = abi.encodePacked(creationCode, abi.encode(deployer));
+
+        address pm;
+        assembly {
+            pm := create(0, add(initCode, 0x20), mload(initCode))
+        }
+        require(pm != address(0), "PoolManager CREATE failed");
+
         poolManager = IPoolManager(pm);
         console.log("[1/8] PoolManager:    ", pm);
     }
