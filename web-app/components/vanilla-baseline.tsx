@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { LiquidityAtlas } from "@/components/strategies/liquidity-atlas";
 import { VANILLA_POOLS } from "@/lib/contracts";
 
 // ============================================================================
@@ -8,6 +10,10 @@ import { VANILLA_POOLS } from "@/lib/contracts";
 // pitch is concrete: same tokens, same fees, but capital is FRAGMENTED
 // across pools instead of unified by the SLP. Styled subtle on purpose so
 // the cyan markets read as the upgrade.
+//
+// Each pool card links to /strategies/vanilla/[token] for a deeper view —
+// mirrors the production marketplace where every venue (hook or vanilla)
+// has its own detail surface.
 // ============================================================================
 
 const VANILLA_TVL_USD = 10_000; // per pool — the demo's assumed split
@@ -42,9 +48,10 @@ export function VanillaBaseline() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {VANILLA_POOLS.map((p) => (
-          <div
+          <Link
             key={p.poolId}
-            className="rounded-xl border border-white/10 bg-card p-4"
+            href={`/strategies/vanilla/${p.token.symbol.toLowerCase()}`}
+            className="group flex flex-col rounded-xl border border-white/10 bg-card p-4 transition-colors hover:border-white/30"
           >
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -60,6 +67,12 @@ export function VanillaBaseline() {
                 Vanilla
               </span>
             </div>
+
+            {/* Vanilla atlas — solid white bars, single cyan center marker. */}
+            <div className="mb-3">
+              <LiquidityAtlas variant="vanilla" size="sm" showLegend={false} />
+            </div>
+
             <dl className="space-y-1.5">
               <Row
                 label="Committed"
@@ -71,7 +84,14 @@ export function VanillaBaseline() {
                 muted
               />
             </dl>
-          </div>
+
+            <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
+              <span className="text-[11px] text-white/40">Hook · None</span>
+              <span className="text-[11px] font-medium text-white/55 transition-colors group-hover:text-cyan">
+                Open →
+              </span>
+            </div>
+          </Link>
         ))}
       </div>
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HeroWaves } from "@/components/aquatic-waves";
 import { DotMark } from "@/components/dot-mark";
 import { Navbar } from "@/components/navbar";
+import { LiquidityAtlas } from "@/components/strategies/liquidity-atlas";
 import { RouteDetail } from "@/components/strategies/route-detail";
 import {
   FUJI_DEPLOYMENT,
@@ -186,7 +187,10 @@ function VanillaBaselineForMarket({
 }) {
   const poolIdShort = `${poolId.slice(0, 6)}…${poolId.slice(-4)}`;
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.015] p-6 sm:p-7">
+    <Link
+      href={`/strategies/vanilla/${token.symbol.toLowerCase()}`}
+      className="group block rounded-2xl border border-white/10 bg-white/[0.015] p-6 transition-colors hover:border-white/25 sm:p-7"
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[10px] uppercase tracking-[0.28em] text-white/40">
@@ -207,13 +211,27 @@ function VanillaBaselineForMarket({
         every other market.
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Metric label="Pool ID" value={poolIdShort} mono />
-        <Metric label="Hook" value="None" />
-        <Metric label="Fee · 30d" value="$12" />
-        <Metric label="Markets backed" value="1 of 6" />
+      <div className="mt-5 grid gap-5 md:grid-cols-[1fr_240px]">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Metric label="Pool ID" value={poolIdShort} mono />
+          <Metric label="Hook" value="None" />
+          <Metric label="Fee · 30d" value="$12" />
+          <Metric label="Markets backed" value="1 of 6" />
+        </div>
+        <div className="rounded-lg border border-white/[0.06] bg-black/30 px-3 py-2.5">
+          <div className="mb-1.5 text-[9.5px] uppercase tracking-[0.22em] text-white/40">
+            Liquidity (seeded)
+          </div>
+          <LiquidityAtlas variant="vanilla" size="sm" showLegend={false} />
+        </div>
       </div>
-    </div>
+
+      <div className="mt-5 flex items-center justify-end border-t border-white/[0.06] pt-3">
+        <span className="text-[12px] font-medium text-white/55 transition-colors group-hover:text-cyan">
+          Open vanilla detail →
+        </span>
+      </div>
+    </Link>
   );
 }
 
