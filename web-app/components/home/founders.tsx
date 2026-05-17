@@ -17,7 +17,7 @@ interface Founder {
 
 const FOUNDERS: Founder[] = [
   {
-    name: "Tomás Castagnino",
+    name: "Tomás Mazzitello",
     role: "Co-founder · CEO",
     bio: "ETHGlobal Buenos Aires winner. 1inch grant. Canopy '25 (Founders Inc).",
     photo: "/Tomas.png",
