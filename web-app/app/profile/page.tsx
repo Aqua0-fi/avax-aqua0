@@ -75,18 +75,18 @@ export default function ProfilePage() {
           <KpiStrip />
         </section>
 
-        {/* ── Active positions — the "you're backing N markets" hero ── */}
-        <section className="mb-6">
-          <ActivePositions />
-        </section>
-
         {/* ── Inventory + Actions ───────────────────────────────────── */}
-        <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <section className="mb-6 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
           <SLPInventory />
           <div className="flex flex-col gap-5">
             <DepositCard />
             <JitActions />
           </div>
+        </section>
+
+        {/* ── Active positions — closes the page with the wow moment ── */}
+        <section>
+          <ActivePositions />
         </section>
       </div>
     </div>
