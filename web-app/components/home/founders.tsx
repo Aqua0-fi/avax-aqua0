@@ -1,41 +1,31 @@
 import { DotMark } from "@/components/dot-mark";
 
 // Founder bio strip — mirrors aqua0.xyz's marketing landing "team" section.
-// Institutional pitch needs team signalling, so we surface it on the
-// disconnected home. Photos live in /public; the avatar element falls
-// back to a glow ring if the image errors so the layout never breaks.
+// Pixelated avatars live in /public; CSS gets image-rendering:pixelated so
+// the upscale stays crisp instead of blurring the deliberate pixel art.
 
 interface Founder {
   name: string;
   role: string;
-  bio: string;
   /** Photo path inside /public. */
   photo: string;
-  /** Glow ring colour — three cool variants to break the cyan monotone. */
-  tint: "cyan" | "indigo" | "teal";
 }
 
 const FOUNDERS: Founder[] = [
   {
     name: "Tomás Mazzitello",
-    role: "Co-founder · CEO",
-    bio: "ETHGlobal Buenos Aires winner. 1inch grant. Canopy '25 (Founders Inc).",
+    role: "CEO",
     photo: "/Tomas.png",
-    tint: "cyan",
   },
   {
-    name: "Yudhish",
-    role: "Co-founder · CTO",
-    bio: "Smart-contract architect. Leads the SLP + V4 hook implementation.",
+    name: "Yudhishthra Sugumaram",
+    role: "CTO",
     photo: "/Yudhishthra.png",
-    tint: "indigo",
   },
   {
-    name: "Rithik",
-    role: "Founding engineer",
-    bio: "Full-stack. Shipped the cross-chain swap path + LP dashboards.",
+    name: "Rithik Kumer",
+    role: "Founding Engineer",
     photo: "/Rithik.png",
-    tint: "teal",
   },
 ];
 
@@ -62,38 +52,21 @@ export function Founders() {
 }
 
 function FounderCard({ founder }: { founder: Founder }) {
-  const tintRing = {
-    cyan: "#7FE5E5",
-    indigo: "#8B9BFF",
-    teal: "#5EE0C8",
-  }[founder.tint];
-
   return (
-    <article className="rounded-xl border border-white/10 bg-card p-5 transition-colors hover:border-white/30">
-      <div className="flex items-center gap-3.5">
-        <div
-          className="h-11 w-11 shrink-0 overflow-hidden rounded-full"
-          style={{
-            boxShadow: `0 0 16px ${tintRing}55, inset 0 0 0 2px ${tintRing}55`,
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={founder.photo}
-            alt={founder.name}
-            className="h-full w-full object-cover"
-          />
+    <article className="flex items-center gap-4 rounded-xl border border-white/10 bg-card p-4 transition-colors hover:border-white/30">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={founder.photo}
+        alt={founder.name}
+        className="h-16 w-16 shrink-0 rounded-lg bg-black object-contain p-1"
+        style={{ imageRendering: "pixelated" }}
+      />
+      <div className="min-w-0">
+        <div className="truncate text-[14px] font-semibold tracking-[-0.01em] text-white">
+          {founder.name}
         </div>
-        <div>
-          <div className="text-[14px] font-semibold tracking-[-0.01em] text-white">
-            {founder.name}
-          </div>
-          <div className="mt-0.5 text-[11px] text-white/50">{founder.role}</div>
-        </div>
+        <div className="mt-0.5 text-[11px] text-white/55">{founder.role}</div>
       </div>
-      <p className="mt-4 text-[12.5px] leading-[1.55] text-white/60">
-        {founder.bio}
-      </p>
     </article>
   );
 }
