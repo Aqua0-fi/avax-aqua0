@@ -65,7 +65,7 @@ function AquaStrategyDetail({ strategy }: { strategy: Strategy }) {
             </span>{" "}
             attached. Every swap pulls amplified depth from the Shared
             Liquidity Pool just-in-time, so the same deposit can back this
-            pool alongside the other five Aqua0 markets.
+            pool alongside the other two Twin Aqua0 markets.
           </p>
         </section>
 
@@ -95,10 +95,13 @@ function AquaStrategyDetail({ strategy }: { strategy: Strategy }) {
 
 function VanillaStrategyDetail({ strategy }: { strategy: Strategy }) {
   // Find the matching Aqua0 strategy for the "see Aqua0 version" CTA.
-  // Pair vanilla-wars → ripio-wars, vanilla-wbrl → ripio-wbrl (same token).
+  // After the Twin-only simplification, vanilla pools (wARS / wBRL) no
+  // longer have a same-token Aqua0 sibling — we pair by FX market instead
+  // (vanilla-wars → twin-arst, vanilla-wbrl → twin-brlt). The story still
+  // holds: "this is your baseline ARS pool, here's the SLP-backed ARS pool
+  // you'd compare against (Twin's ARSt)."
   const aquaSibling = STRATEGIES.find(
-    (s) =>
-      s.kind === "aqua0" && s.token.address === strategy.token.address,
+    (s) => s.kind === "aqua0" && s.marketCode === strategy.marketCode,
   );
 
   return (
@@ -298,7 +301,7 @@ function PoolCard({ strategy }: { strategy: Strategy }) {
         <Metric label="Range" value="Full" />
         <Metric
           label="Markets backed"
-          value={isAqua ? "6 of 6" : "1 of 6"}
+          value={isAqua ? "3 of 3" : "1 of 3"}
           tint={isAqua ? "cyan" : "white"}
         />
       </div>
@@ -381,7 +384,7 @@ function WhyExistsSidebar({
       </p>
 
       <p className="mt-3 text-[13px] leading-[1.6] text-white/55">
-        Same deposit. Earns fees only from this pair. Idle for the other 5
+        Same deposit. Earns fees only from this pair. Idle for the other 2
         Aqua0 markets.
       </p>
 
@@ -398,8 +401,8 @@ function WhyExistsSidebar({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Capital efficiency callout — 8 pills (6 aqua0 + 2 vanilla). Current
-   strategy is highlighted.
+   Capital efficiency callout — pills for every Aqua0 strategy (3 after the
+   Twin-only simplification). Current strategy is highlighted.
    ─────────────────────────────────────────────────────────────────────────── */
 
 function CapitalEfficiencyCallout({ strategy }: { strategy: Strategy }) {
@@ -409,13 +412,13 @@ function CapitalEfficiencyCallout({ strategy }: { strategy: Strategy }) {
         Capital efficiency
       </div>
       <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.015em] text-white">
-        Same deposit. Six markets.
+        Same deposit. Three markets.
       </h3>
 
       <p className="mt-3 max-w-[640px] text-[13px] leading-[1.55] text-white/60">
-        You&apos;re looking at one of six Aqua0 strategies, all backed by
-        the same SLP deposit. A vanilla LP would have to fragment $120k
-        across six pools to match;{" "}
+        You&apos;re looking at one of three Twin Aqua0 strategies, all backed
+        by the same SLP deposit. A vanilla LP would have to fragment $60k
+        across three pools to match;{" "}
         <span className="border-b border-dotted border-cyan/60 text-white">
           you commit $20k once
         </span>
@@ -482,7 +485,7 @@ function CompareCallout({
           </h3>
           <dl className="mt-4 space-y-2">
             <CompareRow label="Hook" value="None" />
-            <CompareRow label="Markets backed" value="1 of 6" />
+            <CompareRow label="Markets backed" value="1 of 3" />
             <CompareRow label="Capital efficiency" value="1× (baseline)" />
             <CompareRow label="Fees · 30d" value="$12" />
           </dl>
@@ -497,8 +500,8 @@ function CompareCallout({
           </h3>
           <dl className="mt-4 space-y-2">
             <CompareRow label="Hook" value="Aqua0" tint="cyan" />
-            <CompareRow label="Markets backed" value="6 of 6" tint="cyan" />
-            <CompareRow label="Capital efficiency" value="6×" tint="cyan" />
+            <CompareRow label="Markets backed" value="3 of 3" tint="cyan" />
+            <CompareRow label="Capital efficiency" value="3×" tint="cyan" />
             <CompareRow label="Fees · 30d" value="$72 (mocked)" tint="cyan" />
           </dl>
           <Link

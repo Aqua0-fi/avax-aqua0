@@ -8,8 +8,10 @@ import {
 } from "@/lib/contracts";
 
 // /strategies — flat marketplace of every venue an LP can browse.
-// Eight cards: six Aqua0-hooked pools (the pitch) + two vanilla baselines
-// (the comparison). Clicking any card opens its /strategies/[id] detail.
+// Five cards: three Twin Aqua0-hooked pools (the pitch) + two Ripio
+// vanilla baselines (the comparison — also doubles as a cross-issuer
+// reminder that Aqua0 doesn't care which issuer's stablecoin you LP).
+// Clicking any card opens its /strategies/[id] detail.
 //
 // We split the page into two sections rather than mixing the kinds in one
 // grid: Aqua0 strategies dominate visually (solid card surface + cyan
@@ -33,23 +35,23 @@ export default function StrategiesPage() {
             Strategies
           </h1>
           <p className="mt-4 max-w-[680px] text-[14px] leading-[1.55] text-white/60">
-            Six Aqua0 strategies, each a USDC ↔ LATAM stablecoin pool with
-            the Aqua0 hook attached. All backed by the{" "}
+            Three Twin Aqua0 strategies, each a USDC ↔ LATAM stablecoin pool
+            with the Aqua0 hook attached. All backed by the{" "}
             <span className="border-b border-dotted border-cyan/60 text-white">
               same SLP deposit
             </span>
-            . Below: two vanilla baselines for comparison.
+            . Below: two Ripio vanilla baselines for comparison.
           </p>
         </section>
 
-        {/* ── Aqua0 strategies (six pools) ──────────────────────────── */}
+        {/* ── Aqua0 strategies (Twin pools) ─────────────────────────── */}
         <section className="mb-12">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-[11px] uppercase tracking-[0.28em] text-cyan">
               Aqua0 · {AQUA0_STRATEGIES.length} pools
             </h2>
             <span className="text-[10.5px] text-white/40">
-              Ripio + Twin · ARS · BRL · MXN
+              Twin · ARS · BRL · MXN
             </span>
           </div>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">

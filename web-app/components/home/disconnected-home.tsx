@@ -33,10 +33,10 @@ export function DisconnectedHome() {
             Aqua0 is cross-margin prime brokerage for DeFi. Deposit once into
             the Shared Liquidity Pool — the same capital backs{" "}
             <span className="border-b border-dotted border-cyan/60 text-white">
-              Ripio&apos;s wARS, wBRL, wMXN and Twin&apos;s ARSt, BRLt, MXNt
+              Twin&apos;s ARSt, BRLt and MXNt
             </span>{" "}
-            simultaneously. Six markets, one deposit, no fragmentation. Built
-            as a Uniswap V4 hook, deployed to Avalanche.
+            simultaneously. Three markets, one deposit, no fragmentation.
+            Built as a Uniswap V4 hook, deployed to Avalanche.
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-2.5">
@@ -71,10 +71,10 @@ export function DisconnectedHome() {
 
         {/* ── Quick stats strip ─────────────────────────────────────── */}
         <section className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] sm:grid-cols-4">
-          <Stat value="6" label="Aqua0 pools" />
-          <Stat value="2" label="Issuers" sub="Ripio + Twin" />
+          <Stat value="3" label="Aqua0 pools" sub="Twin ARSt · BRLt · MXNt" />
+          <Stat value="2" label="Vanilla baselines" sub="for comparison" />
           <Stat value="100%" label="On-chain" sub="LP signs JIT auths" />
-          <Stat value="6×" label="Capital multiplier" sub="vs vanilla LPing" highlighted />
+          <Stat value="3×" label="Capital multiplier" sub="vs vanilla LPing" highlighted />
         </section>
       </div>
 
@@ -118,12 +118,12 @@ function DemoCTA() {
             Drive the demo
           </div>
           <h2 className="text-[24px] font-bold tracking-[-0.02em] text-white">
-            Three buttons. Six markets backed.
+            Three buttons. Three markets backed.
           </h2>
           <p className="mt-2 max-w-[640px] text-[13px] leading-[1.55] text-white/60">
             Mint mock LATAM stables, deposit 20k USDC into the SLP, and back
-            all six aqua0 pools with one signature. No backend, no waitlist —
-            the entire happy path is on the profile page.
+            all three Twin aqua0 pools with one signature. No backend, no
+            waitlist — the entire happy path is on the profile page.
           </p>
         </div>
         <div className="flex flex-col gap-2 md:flex-row">
@@ -176,7 +176,7 @@ function PoolsExplainer() {
         <ExplainerStep
           n="03"
           title="Earn everywhere"
-          body="Fees accrue from all six Ripio + Twin pools. The same 20k that would back one vanilla pair now backs six."
+          body="Fees accrue from all three Twin pools. The same 20k that would back one vanilla pair now backs three."
           art={<ExplainerArt3 />}
         />
       </div>

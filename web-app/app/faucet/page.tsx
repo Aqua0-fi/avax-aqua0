@@ -37,9 +37,10 @@ export default function FaucetPage() {
             Mint 10,000 of each LATAM-themed mock stablecoin. Public mint, no
             rate limits — testnet only. The mainnet deploy will plug into{" "}
             <span className="border-b border-dotted border-cyan/60 text-white">
-              Ripio&apos;s actual wARS/wBRL/wMXN
+              Twin&apos;s actual ARSt / BRLt / MXNt
             </span>{" "}
-            and Twin&apos;s ARSt/BRLt/MXNt issuance.
+            issuance on Avalanche, with Ripio (wARS / wBRL) kept as a
+            cross-issuer baseline.
           </p>
         </section>
 

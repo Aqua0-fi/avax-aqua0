@@ -6,12 +6,12 @@ import { useJitPreference } from "@/hooks/use-jit-preference";
 import { useMint } from "@/hooks/use-mint";
 import { TOKEN_LIST, TOKENS } from "@/lib/contracts";
 
-const DEPOSIT_AMOUNT = "20000"; // The pitch number — 20k that backs 6 markets.
+const DEPOSIT_AMOUNT = "20000"; // The pitch number — 20k that backs 3 Twin markets.
 
 // Quick-action panel on /profile. Three explicit buttons matching the demo's
 // happy path: faucet all tokens, deposit 20k USDC into the SLP, declare JIT
-// preferences across all six aqua0 markets. Aimed at a judge who lands here
-// fresh and wants to drive the demo without reading docs.
+// preferences across all three Twin aqua0 markets. Aimed at a judge who
+// lands here fresh and wants to drive the demo without reading docs.
 export function JitActions() {
   const { isConnected } = useAccount();
   const { mint, isPending: mintBusy } = useMint();
@@ -49,7 +49,7 @@ export function JitActions() {
         <Step
           n={1}
           title="Mint 10k of each LATAM stablecoin"
-          subtitle="Public mint, no rate limit. 7 transactions in sequence."
+          subtitle={`Public mint, no rate limit. ${TOKEN_LIST.length} transactions in sequence.`}
           buttonLabel={mintBusy ? "Minting…" : "Mint all"}
           onClick={handleMintAll}
           disabled={disabled || mintBusy}
@@ -77,9 +77,9 @@ export function JitActions() {
         />
         <Step
           n={3}
-          title="Back all 6 aqua0 markets"
-          subtitle="Declares JIT positions across Ripio + Twin pools. Same capital."
-          buttonLabel={jit.isPending ? "Signing…" : "Back 6 markets"}
+          title="Back all 3 Twin markets"
+          subtitle="Declares JIT positions across the three Twin pools. Same capital."
+          buttonLabel={jit.isPending ? "Signing…" : "Back 3 markets"}
           onClick={handleBackAllMarkets}
           disabled={disabled || jit.isPending}
         />

@@ -3,11 +3,12 @@ import { DotMark } from "@/components/dot-mark";
 import { Navbar } from "@/components/navbar";
 import { SwapForm } from "@/components/swap/swap-form";
 
-// /swap — trade against the 6 aqua0 pools. The form on the left is the
-// interactive surface; the panel on the right explains the routing model
-// so a judge clicking around understands what's happening on-chain without
-// reading docs. On-chain wiring (swap router + V4 quoter) lands in a
-// follow-up commit — until then the form is a UI preview.
+// /swap — trade against the 3 Twin aqua0 pools (ARSt / BRLt / MXNt). The
+// form on the left is the interactive surface; the panel on the right
+// explains the routing model so a judge clicking around understands what's
+// happening on-chain without reading docs. On-chain wiring (swap router +
+// V4 quoter) lands in a follow-up commit — until then the form is a UI
+// preview.
 export default function SwapPage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -25,9 +26,9 @@ export default function SwapPage() {
             Swap
           </h1>
           <p className="mt-4 max-w-[680px] text-[14px] leading-[1.55] text-white/60">
-            Trade USDC against any of the six LATAM stablecoins. Every swap
-            settles on a Uniswap V4 pool whose liquidity is amplified by the
-            Aqua0 hook pulling from the{" "}
+            Trade USDC against any of the three Twin LATAM stablecoins. Every
+            swap settles on a Uniswap V4 pool whose liquidity is amplified by
+            the Aqua0 hook pulling from the{" "}
             <span className="border-b border-dotted border-cyan/60 text-white">
               Shared Liquidity Pool just-in-time
             </span>
@@ -58,7 +59,7 @@ function RouteInfo() {
           How this routes
         </div>
         <h2 className="mt-1 text-[18px] font-bold tracking-[-0.015em]">
-          One pool. Six markets of depth.
+          One deposit. Three Twin markets of depth.
         </h2>
       </header>
 
@@ -76,12 +77,12 @@ function RouteInfo() {
         <Step
           n={3}
           title="Trade executes against amplified depth"
-          body="Your swap routes against the seeded V4 liquidity plus the JIT capital — the same SLP deposit backs all 6 aqua0 pools."
+          body="Your swap routes against the seeded V4 liquidity plus the JIT capital — the same SLP deposit backs all 3 Twin aqua0 pools."
         />
         <Step
           n={4}
           title="afterSwap settles the capital"
-          body="Fees credit each LP's SLP balance. Capital is released so the same deposit can back the next swap on any of the other 5 pools."
+          body="Fees credit each LP's SLP balance. Capital is released so the same deposit can back the next swap on either of the other 2 pools."
         />
       </ol>
 

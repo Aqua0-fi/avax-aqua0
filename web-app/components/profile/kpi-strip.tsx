@@ -12,15 +12,16 @@ import { formatAmount } from "@/lib/utils";
 // 10px uppercase labels, 24px bold number, optional sub-label.
 export function KpiStrip() {
   const { isConnected } = useAccount();
+  // Only sum the assets actively used by Aqua0 strategies: USDC + the three
+  // Twin LATAM stables. wARS / wBRL are part of TOKEN_LIST (so the user can
+  // mint them and LP into the vanilla baselines) but they're not counted as
+  // SLP-backing capital here.
   const usdc = useSLPBalance(TOKENS.usdc);
-  const wars = useSLPBalance(TOKENS.wars);
-  const wbrl = useSLPBalance(TOKENS.wbrl);
-  const wmxn = useSLPBalance(TOKENS.wmxn);
   const arst = useSLPBalance(TOKENS.arst);
   const brlt = useSLPBalance(TOKENS.brlt);
   const mxnt = useSLPBalance(TOKENS.mxnt);
 
-  const balances = [usdc, wars, wbrl, wmxn, arst, brlt, mxnt];
+  const balances = [usdc, arst, brlt, mxnt];
   const totalDeposited = balances.reduce(
     (sum, b) => sum + (b.balance?.deposited ?? 0n),
     0n,
@@ -30,7 +31,8 @@ export function KpiStrip() {
     0n,
   );
 
-  // All 7 mocks at 6 decimals so summing raw bigints + formatting once is OK.
+  // All active mocks (USDC + 3 Twin) at 6 decimals so summing raw bigints +
+  // formatting once is OK.
   const totalDepositedHuman = formatAmount(totalDeposited, 6, 0);
   const totalAvailableHuman = formatAmount(totalAvailable, 6, 0);
 
@@ -54,7 +56,7 @@ export function KpiStrip() {
       />
       <Kpi
         label="Capital multiplier"
-        value={placeholder ? "0×" : "6×"}
+        value={placeholder ? "0×" : `${LATAM_STABLES.length}×`}
         sub="vs vanilla LPing"
         tint="cyan"
       />

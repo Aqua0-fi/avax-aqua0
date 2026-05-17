@@ -85,15 +85,15 @@ export function useJitPreference() {
     }
   }
 
-  /** Convenience: declare the same amount across all six LATAM pools — three
-   *  Ripio markets + three Twin markets — backed by one shared SLP deposit. */
+  /** Convenience: declare the same amount across all three Twin LATAM pools
+   *  (ARSt / BRLt / MXNt) backed by one shared SLP deposit. The three Ripio
+   *  Aqua0 pools are still deployed on-chain but excluded here to keep the
+   *  demo focused on a single issuer (see lib/contracts.ts STRATEGIES). */
   async function backAllLatamPools(humanAmount: string) {
-    // All seven mocks are 6 decimals — keeps the demo math clean.
+    // All active mocks (USDC + ARSt/BRLt/MXNt) are 6 decimals — keeps the
+    // demo math clean.
     const dec = TOKENS.usdc.decimals;
     const pools = [
-      FUJI_DEPLOYMENT.pools.warsUsdcAqua0,
-      FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0,
-      FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0,
       FUJI_DEPLOYMENT.pools.arstUsdcAqua0,
       FUJI_DEPLOYMENT.pools.brltUsdcAqua0,
       FUJI_DEPLOYMENT.pools.mxntUsdcAqua0,

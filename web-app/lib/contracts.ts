@@ -34,19 +34,25 @@ export const FUJI_DEPLOYMENT = {
     mxnt: "0x4ffED179B94ebFBec4196E73F3823B2f23e44AF7" as Address,
   },
   pools: {
-    // 6 Aqua0-enabled pools — every swap routes through Aqua0Hook, which
-    // pulls SLP liquidity into the pool transient-style for the swap window.
-    // Ripio family
+    // 6 Aqua0-enabled pools deployed on-chain — each swap routes through
+    // Aqua0Hook, which pulls SLP liquidity into the pool transient-style
+    // for the swap window. The frontend only surfaces the 3 Twin pools as
+    // strategies; the 3 Ripio Aqua0 pools below remain live on-chain but
+    // are hidden from /strategies for demo simplicity (one issuer story).
+    //
+    // Ripio family (Aqua0) — deployed but NOT surfaced in the frontend.
     warsUsdcAqua0: "0xd8f62c0306f283d672b02ba456ea739e652ec2814ff820934e5ac7596726b63b" as `0x${string}`,
     wbrlUsdcAqua0: "0x4db7dfe9bb5f6979f1f3841759016531770423faca70bdbca7d0fdcbcbb899a0" as `0x${string}`,
     wmxnUsdcAqua0: "0x183b8492182f25791c2a3198334eebeecc1a6f0fde24b4440dad3c2bc08beb7d" as `0x${string}`,
-    // Twin family
+    // Twin family (Aqua0) — the 3 active demo strategies.
     arstUsdcAqua0: "0x2ac7b9eba1f29435f01c326ae77e0ae5ad08df54756c83cc8523de5a3f460f34" as `0x${string}`,
     brltUsdcAqua0: "0xaaaaacd61b32d5f528b3904d0586727090619e28823090bd64993e46624b8b26" as `0x${string}`,
     mxntUsdcAqua0: "0x047f5ebafb6764ff2a567a41980c910559bd941c64e4f2f389a7dfa1460f4fbb" as `0x${string}`,
     // 2 vanilla V4 pools (no hook) — baseline for the dashboard's comparison.
     // The pitch story: '20k split across these 2 traditional pools earns N
-    // fees; the same 20k in the SLP backs all 6 aqua0 pools.'
+    // fees; the same 20k in the SLP backs all 3 Twin Aqua0 pools.' Vanillas
+    // are kept on Ripio's wARS / wBRL to underline that Aqua0 is also
+    // issuer-agnostic (compare across issuers).
     warsUsdcVanilla: "0x32539f5dd9519f3b61f2cbfde4dc99abaad98da15701ac751465ea1e7df7291e" as `0x${string}`,
     wbrlUsdcVanilla: "0x6ee5c37291fa20922dacf82bcb18ab4d33a4b2866e47f711ed44f2c129d53499" as `0x${string}`,
   },
@@ -131,32 +137,33 @@ export const TOKENS: Record<keyof typeof FUJI_DEPLOYMENT.tokens, TokenMeta> = {
   },
 };
 
+// 6 tokens surfaced in the frontend: USDC + 3 Twin (the Aqua0 strategies) +
+// 2 Ripio (wARS / wBRL, kept so the user can interact with the vanilla
+// baseline pools). wMXN is omitted — it has no corresponding strategy on
+// /strategies and would only clutter the faucet / inventory.
 export const TOKEN_LIST: TokenMeta[] = [
   TOKENS.usdc,
-  TOKENS.wars,
-  TOKENS.wbrl,
-  TOKENS.wmxn,
   TOKENS.arst,
   TOKENS.brlt,
   TOKENS.mxnt,
-];
-
-// Just the 6 aqua0-pool tokens, USDC excluded — what the LP "backs" via
-// JIT preferences. Useful when iterating over the comparison-card rows.
-export const LATAM_STABLES: TokenMeta[] = [
   TOKENS.wars,
   TOKENS.wbrl,
-  TOKENS.wmxn,
+];
+
+// The 3 Twin LATAM stables the LP backs via JIT preferences — i.e. the
+// Aqua0 strategies the frontend exposes. USDC excluded (anchor side).
+// Iteration target for the "back all markets" quick action.
+export const LATAM_STABLES: TokenMeta[] = [
   TOKENS.arst,
   TOKENS.brlt,
   TOKENS.mxnt,
 ];
 
 // ============================================================================
-// Markets — the unit the /strategies page renders. Each "market" represents a
-// single FX pair (ARS, BRL, MXN) with both issuers' tokens. The LP doesn't
-// pick between Ripio's wARS and Twin's ARSt — Aqua0 backs BOTH from the same
-// SLP deposit. That's the issuer-agnostic pitch.
+// Markets — one entry per FX market (ARS, BRL, MXN). After the Twin-only
+// simplification each market has exactly one Aqua0 route (Twin's ARSt /
+// BRLt / MXNt). The Ripio Aqua0 routes are still on-chain but not surfaced
+// here, since the demo tells a single-issuer story.
 // ============================================================================
 
 export interface MarketRoute {
@@ -172,7 +179,7 @@ export interface Market {
   code: "ARS" | "BRL" | "MXN";
   /** Flag emoji for the header. */
   flag: string;
-  /** Both issuer routes for this FX market. */
+  /** Twin-only route for this FX market. */
   routes: MarketRoute[];
 }
 
@@ -182,7 +189,6 @@ export const MARKETS: Market[] = [
     code: "ARS",
     flag: "🇦🇷",
     routes: [
-      { token: TOKENS.wars, poolId: FUJI_DEPLOYMENT.pools.warsUsdcAqua0 },
       { token: TOKENS.arst, poolId: FUJI_DEPLOYMENT.pools.arstUsdcAqua0 },
     ],
   },
@@ -191,7 +197,6 @@ export const MARKETS: Market[] = [
     code: "BRL",
     flag: "🇧🇷",
     routes: [
-      { token: TOKENS.wbrl, poolId: FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0 },
       { token: TOKENS.brlt, poolId: FUJI_DEPLOYMENT.pools.brltUsdcAqua0 },
     ],
   },
@@ -200,7 +205,6 @@ export const MARKETS: Market[] = [
     code: "MXN",
     flag: "🇲🇽",
     routes: [
-      { token: TOKENS.wmxn, poolId: FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0 },
       { token: TOKENS.mxnt, poolId: FUJI_DEPLOYMENT.pools.mxntUsdcAqua0 },
     ],
   },
@@ -218,20 +222,21 @@ export const VANILLA_POOLS: VanillaPool[] = [
 
 // ============================================================================
 // Strategies — flat list of every venue an LP can browse. A "strategy" here
-// is a single pool (USDC ↔ one stablecoin), not a regional grouping. Six
-// Aqua0-hooked pools + two vanilla baselines = 8 total, each addressable
-// via /strategies/[id].
+// is a single pool (USDC ↔ one stablecoin), not a regional grouping. Three
+// Twin Aqua0-hooked pools + two Ripio vanilla baselines = 5 total, each
+// addressable via /strategies/[id].
 //
-// This is the unit /strategies and /strategies/[id] render. Keeping it flat
-// matches how the production aqua0/web-app marketplace surfaces venues, and
-// removes the cognitive split between "markets" and "pools" the previous
-// design had.
+// Why Twin-only Aqua0: the demo tells a single-issuer story (one cohesive
+// LATAM-stable family). The 3 Ripio Aqua0 pools are still deployed on-chain
+// but hidden from the UI. The vanilla pools stay on Ripio so the comparison
+// also doubles as a cross-issuer baseline — visually reinforcing that Aqua0
+// is issuer-agnostic.
 // ============================================================================
 
 export type StrategyKind = "aqua0" | "vanilla";
 
 export interface Strategy {
-  /** Stable slug for the URL — e.g. "ripio-wars", "twin-arst", "vanilla-wars". */
+  /** Stable slug for the URL — e.g. "twin-arst", "vanilla-wars". */
   id: string;
   kind: StrategyKind;
   /** The non-USDC side of the pair. */
@@ -245,17 +250,7 @@ export interface Strategy {
 }
 
 export const STRATEGIES: Strategy[] = [
-  // ─── Aqua0 · ARS ────────────────────────────────────────────────────
-  {
-    id: "ripio-wars",
-    kind: "aqua0",
-    token: TOKENS.wars,
-    poolId: FUJI_DEPLOYMENT.pools.warsUsdcAqua0,
-    marketCode: "ARS",
-    marketLabel: "Argentine Peso",
-    marketFlag: "🇦🇷",
-    issuer: "ripio",
-  },
+  // ─── Aqua0 · Twin ────────────────────────────────────────────────────
   {
     id: "twin-arst",
     kind: "aqua0",
@@ -265,17 +260,6 @@ export const STRATEGIES: Strategy[] = [
     marketLabel: "Argentine Peso",
     marketFlag: "🇦🇷",
     issuer: "twin",
-  },
-  // ─── Aqua0 · BRL ────────────────────────────────────────────────────
-  {
-    id: "ripio-wbrl",
-    kind: "aqua0",
-    token: TOKENS.wbrl,
-    poolId: FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0,
-    marketCode: "BRL",
-    marketLabel: "Brazilian Real",
-    marketFlag: "🇧🇷",
-    issuer: "ripio",
   },
   {
     id: "twin-brlt",
@@ -287,17 +271,6 @@ export const STRATEGIES: Strategy[] = [
     marketFlag: "🇧🇷",
     issuer: "twin",
   },
-  // ─── Aqua0 · MXN ────────────────────────────────────────────────────
-  {
-    id: "ripio-wmxn",
-    kind: "aqua0",
-    token: TOKENS.wmxn,
-    poolId: FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0,
-    marketCode: "MXN",
-    marketLabel: "Mexican Peso",
-    marketFlag: "🇲🇽",
-    issuer: "ripio",
-  },
   {
     id: "twin-mxnt",
     kind: "aqua0",
@@ -308,7 +281,7 @@ export const STRATEGIES: Strategy[] = [
     marketFlag: "🇲🇽",
     issuer: "twin",
   },
-  // ─── Vanilla baselines ───────────────────────────────────────────────
+  // ─── Vanilla baselines (Ripio family — cross-issuer baseline) ───────
   {
     id: "vanilla-wars",
     kind: "vanilla",

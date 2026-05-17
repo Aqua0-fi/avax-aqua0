@@ -5,7 +5,6 @@ import { useAccount } from "wagmi";
 import { useWalletBalance } from "@/hooks/use-slp-balance";
 import {
   FUJI_DEPLOYMENT,
-  TOKEN_LIST,
   TOKENS,
   type TokenMeta,
 } from "@/lib/contracts";
@@ -19,7 +18,12 @@ import { TokenSelect } from "./token-select";
 // supports modifyLiquidity, not swap — we'll deploy a dedicated SwapRouter +
 // V4 quoter in a follow-up). For now this renders a complete, interactive
 // preview: token selectors, amount input, client-side quote, slippage control,
-// and route detection against the 6 aqua0 pools.
+// and route detection against the 3 Twin aqua0 pools.
+//
+// Twin-only by design: /strategies surfaces only the 3 Twin Aqua0 markets, so
+// the swap UI mirrors that. The Ripio Aqua0 pools are still deployed but not
+// exposed here. wARS / wBRL stay in TOKEN_LIST for the vanilla-baseline flow
+// (faucet + SLP inventory + deposit card), but they're not swappable here.
 //
 // The "Swap" CTA shows a disabled state with a "Coming online next" label —
 // honest signalling for a judge clicking around the demo.
@@ -28,12 +32,17 @@ import { TokenSelect } from "./token-select";
 const FEE_BPS = 30; // 0.30% V4 pool fee (3000 ppm = 30 bps)
 const BPS_DENOM = 10_000n;
 
-// Maps each LATAM stablecoin symbol → its aqua0 pool ID. Explicit lookup
+// The 4 tokens the swap surface exposes: USDC + the 3 Twin LATAM stables.
+const SWAP_TOKENS: TokenMeta[] = [
+  TOKENS.usdc,
+  TOKENS.arst,
+  TOKENS.brlt,
+  TOKENS.mxnt,
+];
+
+// Maps each Twin LATAM stablecoin symbol → its aqua0 pool ID. Explicit lookup
 // instead of string-mashing from symbol to FUJI_DEPLOYMENT.pools keys.
 const AQUA0_POOL_BY_LATAM: Record<string, `0x${string}`> = {
-  wARS: FUJI_DEPLOYMENT.pools.warsUsdcAqua0,
-  wBRL: FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0,
-  wMXN: FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0,
   ARSt: FUJI_DEPLOYMENT.pools.arstUsdcAqua0,
   BRLt: FUJI_DEPLOYMENT.pools.brltUsdcAqua0,
   MXNt: FUJI_DEPLOYMENT.pools.mxntUsdcAqua0,
@@ -46,7 +55,7 @@ export function SwapForm() {
 
   // ── Form state ───────────────────────────────────────────────────────────
   const [fromToken, setFromToken] = useState<TokenMeta>(TOKENS.usdc);
-  const [toToken, setToToken] = useState<TokenMeta>(TOKENS.wars);
+  const [toToken, setToToken] = useState<TokenMeta>(TOKENS.arst);
   const [amountStr, setAmountStr] = useState<string>("");
   const [slippageBps, setSlippageBps] = useState<number>(50);
 
@@ -91,7 +100,7 @@ export function SwapForm() {
     if (token.address !== TOKENS.usdc.address && toToken.address !== TOKENS.usdc.address) {
       setToToken(TOKENS.usdc);
     } else if (token.address === toToken.address) {
-      setToToken(token.address === TOKENS.usdc.address ? TOKENS.wars : TOKENS.usdc);
+      setToToken(token.address === TOKENS.usdc.address ? TOKENS.arst : TOKENS.usdc);
     }
   }
 
@@ -100,7 +109,7 @@ export function SwapForm() {
     if (token.address !== TOKENS.usdc.address && fromToken.address !== TOKENS.usdc.address) {
       setFromToken(TOKENS.usdc);
     } else if (token.address === fromToken.address) {
-      setFromToken(token.address === TOKENS.usdc.address ? TOKENS.wars : TOKENS.usdc);
+      setFromToken(token.address === TOKENS.usdc.address ? TOKENS.arst : TOKENS.usdc);
     }
   }
 
@@ -109,17 +118,18 @@ export function SwapForm() {
     setAmountStr(formatAmount(fromBalance.balance, fromToken.decimals, 6));
   }
 
-  // Filter dropdowns so users can't pick invalid pairs.
+  // Filter dropdowns so users can't pick invalid pairs. Swap surface is
+  // Twin-only — USDC ↔ {ARSt, BRLt, MXNt}.
   const toOptions = useMemo(() => {
     if (fromToken.address === TOKENS.usdc.address) {
-      return TOKEN_LIST.filter((t) => t.address !== TOKENS.usdc.address);
+      return SWAP_TOKENS.filter((t) => t.address !== TOKENS.usdc.address);
     }
     return [TOKENS.usdc];
   }, [fromToken]);
 
   const fromOptions = useMemo(() => {
     if (toToken.address === TOKENS.usdc.address) {
-      return TOKEN_LIST;
+      return SWAP_TOKENS;
     }
     return [TOKENS.usdc];
   }, [toToken]);
@@ -404,7 +414,7 @@ function resolveCta(args: {
     return {
       label: "Pick a USDC pair",
       disabled: true,
-      subnote: "Aqua0 routes USDC ↔ each LATAM stablecoin. No direct LATAM ↔ LATAM hop yet.",
+      subnote: "Aqua0 routes USDC ↔ each Twin LATAM stablecoin. No direct LATAM ↔ LATAM hop yet.",
     };
   }
   if (args.amountInRaw === 0n) {
