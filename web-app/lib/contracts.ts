@@ -27,6 +27,12 @@ export const FUJI_DEPLOYMENT = {
   slp:             "0xd0508EAA61bEd6e31299d56d3cDf4Be8F53863D4" as Address,
   aqua0Hook:       "0x43EbC33AC48f3FDf9aeF56a40e31F02D880280C0" as Address,
   liquidityRouter: "0xa3e4EC3fcd8e854437E69570BA385fD172830a2D" as Address,
+  // Standalone swap router (DeploySwapRouter.s.sol). Used by:
+  //   1. SimulateSwaps.s.sol — pre-demo trader script that seeds the Swap
+  //      events the /swap comparison panel reads.
+  //   2. Eventually, an in-app "swap" CTA if/when we wire one up — today
+  //      the page is read-only (comparison panel of pool stats).
+  swapRouter:      "0xF267Faa603C41C3A4c644aCe91126a485caCE76D" as Address,
   // The block at which the v2 SLP went live. Used as the lower bound for
   // getLogs() when computing per-user SLP balances from Deposited /
   // Withdrawn events. Pulled from deployments/avalanche-fuji.json.
@@ -468,3 +474,73 @@ export const LIQUIDITY_ROUTER_ABI = [
 
 export const ZERO_BYTES32 =
   "0x0000000000000000000000000000000000000000000000000000000000000000" as const;
+
+// PoolManager ABI — we only need the Swap event for the comparison panel
+// on /swap. Every swap on every V4 pool emits this from the same
+// PoolManager singleton, so we can read activity for all 5 surfaced pools
+// from one address by filtering on the indexed `id` (poolId).
+export const POOL_MANAGER_ABI = [
+  {
+    type: "event",
+    name: "Swap",
+    inputs: [
+      { name: "id", type: "bytes32", indexed: true },
+      { name: "sender", type: "address", indexed: true },
+      { name: "amount0", type: "int128", indexed: false },
+      { name: "amount1", type: "int128", indexed: false },
+      { name: "sqrtPriceX96", type: "uint160", indexed: false },
+      { name: "liquidity", type: "uint128", indexed: false },
+      { name: "tick", type: "int24", indexed: false },
+      { name: "fee", type: "uint24", indexed: false },
+    ],
+    anonymous: false,
+  },
+] as const;
+
+// FujiSwapRouter ABI — companion to LIQUIDITY_ROUTER_ABI. Single entrypoint
+// `swap(PoolKey, SwapParams)` that pulls tokenIn from msg.sender via
+// transferFrom inside the unlock callback. Used by SimulateSwaps.s.sol
+// today; available client-side if we ever wire an in-app swap CTA.
+export const SWAP_ROUTER_ABI = [
+  {
+    type: "function",
+    name: "swap",
+    stateMutability: "nonpayable",
+    inputs: [
+      {
+        name: "key",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "zeroForOne", type: "bool" },
+          { name: "amountSpecified", type: "int256" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+    ],
+    outputs: [{ name: "delta", type: "int256" }],
+  },
+] as const;
+
+/**
+ * Find the Strategy that owns a given poolId. Used by the fee-comparison
+ * panel to map Swap events (which carry the raw bytes32 PoolId) back to a
+ * tokenful Strategy so we can render "{LATAM}/USDC" rows.
+ *
+ * Comparison is lowercased on both sides because viem hex strings are
+ * lowercase by convention and our STRATEGIES table is mixed-case.
+ */
+export function strategyByPoolId(poolId: string): Strategy | undefined {
+  const target = poolId.toLowerCase();
+  return STRATEGIES.find((s) => s.poolId.toLowerCase() === target);
+}

@@ -1,14 +1,17 @@
+import Link from "next/link";
 import { HeroWaves } from "@/components/aquatic-waves";
 import { DotMark } from "@/components/dot-mark";
 import { Navbar } from "@/components/navbar";
-import { SwapForm } from "@/components/swap/swap-form";
+import { FeeComparison } from "@/components/swap/fee-comparison";
 
-// /swap — trade against the 3 Twin aqua0 pools (ARSt / BRLt / MXNt). The
-// form on the left is the interactive surface; the panel on the right
-// explains the routing model so a judge clicking around understands what's
-// happening on-chain without reading docs. On-chain wiring (swap router +
-// V4 quoter) lands in a follow-up commit — until then the form is a UI
-// preview.
+// /swap — the demo's quantitative panel. We don't render a swap form here
+// any more (the previous build had one as a UI preview only). The page is
+// dedicated to one thing: showing how many fees Aqua0 pools earned vs the
+// vanilla baselines under the same simulated trading activity.
+//
+// Data flow: a `forge script SimulateSwaps` run seeds Swap events across all
+// 5 pools. `usePoolStats` reads them from PoolManager and groups them into
+// Aqua0 vs vanilla. `FeeComparison` renders the side-by-side comparison.
 export default function SwapPage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -20,78 +23,63 @@ export default function SwapPage() {
         <section className="mb-10">
           <div className="mb-3 inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.3em] text-white/60">
             <DotMark />
-            Routed through Aqua0 hook
+            Trading activity · simulated on Fuji
           </div>
           <h1 className="text-[clamp(32px,4.5vw,52px)] font-bold leading-none tracking-[-0.025em] text-white">
-            Swap
+            Where the fees go
           </h1>
           <p className="mt-4 max-w-[680px] text-[14px] leading-[1.55] text-white/60">
-            Trade USDC against any of the three Twin LATAM stablecoins. Every
-            swap settles on a Uniswap V4 pool whose liquidity is amplified by
-            the Aqua0 hook pulling from the{" "}
+            We ran the same batch of trades through every pool on this
+            deployment — two vanilla V4 pools and three Aqua0-hooked pools.
+            Same fee tier, same total volume. The Aqua0 LP earns from{" "}
             <span className="border-b border-dotted border-cyan/60 text-white">
-              Shared Liquidity Pool just-in-time
+              three Twin markets at once
             </span>
-            .
+            ; the vanilla LP earns from the two pools their capital is split
+            across.
           </p>
         </section>
 
-        {/* ── Form + Route info ────────────────────────────────────────── */}
-        <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-          <SwapForm />
-          <RouteInfo />
+        {/* ── Comparison panel ─────────────────────────────────────────── */}
+        <FeeComparison />
+
+        {/* ── How the data lands here ──────────────────────────────────── */}
+        <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.015] p-5 sm:p-6">
+          <div className="mb-3 inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.28em] text-white/55">
+            <DotMark />
+            How the numbers got here
+          </div>
+          <ol className="grid gap-3 text-[13px] leading-relaxed text-white/70 md:grid-cols-3">
+            <Step
+              n={1}
+              title="SimulateSwaps script"
+              body="A Forge script signs 20 mixed swaps from the deployer wallet — 12 against the Twin Aqua0 pools, 8 against the Ripio vanilla pools."
+            />
+            <Step
+              n={2}
+              title="V4 PoolManager emits"
+              body="Each settlement emits a Swap log with amount0, amount1 and the realised fee tier — exactly the shape we'd read in production."
+            />
+            <Step
+              n={3}
+              title="Frontend aggregates"
+              body="usePoolStats reads logs via publicClient.getLogs, groups by poolId, and totals fees + volume per side. Refetches every 10s."
+            />
+          </ol>
+          <div className="mt-4 text-[11.5px] text-white/40">
+            Open a strategy detail in{" "}
+            <Link
+              href="/strategies"
+              className="underline decoration-cyan/40 underline-offset-4 hover:decoration-cyan hover:text-cyan/90"
+            >
+              /strategies
+            </Link>{" "}
+            to back your own Twin market and start earning from this same
+            event stream.
+          </div>
         </section>
       </div>
     </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   Sidebar — explains how a swap settles end-to-end on Aqua0 without forcing
-   the user to read docs. Numbered steps mirror the on-chain execution path.
-   ─────────────────────────────────────────────────────────────────────────── */
-
-function RouteInfo() {
-  return (
-    <aside className="rounded-2xl border border-cyan/25 bg-cyan/[0.03] p-6 backdrop-blur-sm">
-      <header className="mb-4">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-cyan">
-          How this routes
-        </div>
-        <h2 className="mt-1 text-[18px] font-bold tracking-[-0.015em]">
-          One deposit. Three Twin markets of depth.
-        </h2>
-      </header>
-
-      <ol className="space-y-3.5 text-[13px] leading-relaxed text-white/75">
-        <Step
-          n={1}
-          title="You sign one transaction"
-          body="Standard V4 swap on the USDC ↔ LATAM stable pool you selected. No off-chain signer touches your trade."
-        />
-        <Step
-          n={2}
-          title="Aqua0Hook fires beforeSwap"
-          body="The hook reads each LP's JIT preference and pulls SLP capital into the pool transient-style for this swap window only."
-        />
-        <Step
-          n={3}
-          title="Trade executes against amplified depth"
-          body="Your swap routes against the seeded V4 liquidity plus the JIT capital — the same SLP deposit backs all 3 Twin aqua0 pools."
-        />
-        <Step
-          n={4}
-          title="afterSwap settles the capital"
-          body="Fees credit each LP's SLP balance. Capital is released so the same deposit can back the next swap on either of the other 2 pools."
-        />
-      </ol>
-
-      <div className="mt-5 rounded-xl border border-white/10 bg-black/40 p-3.5 text-[11.5px] leading-relaxed text-white/55">
-        <span className="text-cyan">No backend signer.</span> JIT preferences
-        are EIP-712 payloads signed by each LP&apos;s own wallet. Your
-        capital never leaves the SLP without your signature.
-      </div>
-    </aside>
   );
 }
 
