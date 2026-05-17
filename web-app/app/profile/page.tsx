@@ -84,8 +84,8 @@ export default function ProfilePage() {
         <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
           <SLPInventory />
           <div className="flex flex-col gap-5">
-            <JitActions />
             <DepositCard />
+            <JitActions />
           </div>
         </section>
       </div>
