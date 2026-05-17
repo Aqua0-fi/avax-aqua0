@@ -37,7 +37,7 @@ export const FUJI_DEPLOYMENT = {
   // tx. Holds its own token balance so the caller doesn't need to faucet
   // or approve anything — they just pay the gas. Powers the "Run N
   // swaps" button on /swap. Deployed via DeploySwapSimulator.s.sol.
-  swapSimulator:   "0xD1015cdbb26A92F61409563f1a4C8dd8d01CD66d" as Address,
+  swapSimulator:   "0x74C5aAB301E0B889F03112E5CF089D1309D5eAE1" as Address,
   // The block at which the v2 SLP went live. Used as the lower bound for
   // getLogs() when computing per-user SLP balances from Deposited /
   // Withdrawn events. Pulled from deployments/avalanche-fuji.json.
