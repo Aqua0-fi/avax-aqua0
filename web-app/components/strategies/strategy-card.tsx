@@ -15,9 +15,10 @@ import { formatAmount } from "@/lib/utils";
 // comparison furniture.
 //
 // Two explicit CTAs in the footer instead of a card-wide click target —
-// 'Add liquidity' is the primary action for aqua0 strategies, 'Detail →'
-// is always available. Vanilla cards drop the deploy CTA since they have
-// no Aqua0 deposit path.
+// 'Add liquidity' is the primary action for both kinds. Aqua0 cards route
+// through DeployLiquidityCard (wallet → SLP → JIT preference); vanilla
+// cards route through VanillaDepositCard (wallet → V4 PoolManager direct).
+// Both anchor-scroll to the deposit surface on the detail page.
 // ============================================================================
 
 export function StrategyCard({ strategy }: { strategy: Strategy }) {
@@ -131,12 +132,20 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             </Link>
           </>
         ) : (
-          <Link
-            href={`/strategies/${strategy.id}`}
-            className="ml-auto text-[12px] font-medium text-white/55 transition-colors hover:text-white"
-          >
-            Open detail →
-          </Link>
+          <>
+            <Link
+              href={`/strategies/${strategy.id}#deposit`}
+              className="flex-1 rounded-lg border border-white/30 bg-white/[0.04] px-3.5 py-2 text-center text-[12px] font-semibold text-white transition-colors hover:bg-white/[0.08]"
+            >
+              Add liquidity
+            </Link>
+            <Link
+              href={`/strategies/${strategy.id}`}
+              className="rounded-lg border border-white/10 px-3 py-2 text-[12px] font-medium text-white/65 transition-colors hover:border-white/30 hover:text-white"
+            >
+              Detail →
+            </Link>
+          </>
         )}
       </div>
     </article>

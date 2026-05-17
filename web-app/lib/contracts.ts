@@ -350,3 +350,74 @@ export const FULL_RANGE_TICKS = {
   tickLower: -887220,
   tickUpper: 887220,
 } as const;
+
+// Pool config constants — mirror script/DeployFuji.s.sol exactly. Every pool
+// on Fuji was initialised with these values, so any PoolKey we rebuild on the
+// client must match or the V4 PoolId hashes won't line up.
+export const POOL_FEE = 3000; // 0.30%
+export const TICK_SPACING = 60;
+export const ZERO_HOOK: Address = "0x0000000000000000000000000000000000000000";
+
+/**
+ * Build the V4 PoolKey for a vanilla strategy from its (USDC, latam-stable)
+ * pair. V4 requires currency0.address < currency1.address — we sort here so
+ * the resulting key hashes to the on-chain PoolId.
+ */
+export function buildVanillaPoolKey(strategy: Strategy): PoolKey {
+  if (strategy.kind !== "vanilla") {
+    throw new Error(`buildVanillaPoolKey: strategy "${strategy.id}" is not vanilla`);
+  }
+  const usdc = FUJI_DEPLOYMENT.tokens.usdc;
+  const other = strategy.token.address;
+  const [currency0, currency1] =
+    usdc.toLowerCase() < other.toLowerCase() ? [usdc, other] : [other, usdc];
+  return {
+    currency0,
+    currency1,
+    fee: POOL_FEE,
+    tickSpacing: TICK_SPACING,
+    hooks: ZERO_HOOK,
+  };
+}
+
+// FujiLiquidityRouter ABI — script/DeployFuji.s.sol ships a minimal
+// IUnlockCallback router because V4 has no canonical liquidity router yet.
+// `modifyLiquidity(key, params)` takes a PoolKey + ModifyLiquidityParams and
+// pulls token0/token1 from msg.sender via transferFrom inside the unlock
+// callback. Approve currency0 + currency1 first, then call.
+export const LIQUIDITY_ROUTER_ABI = [
+  {
+    type: "function",
+    name: "modifyLiquidity",
+    stateMutability: "payable",
+    inputs: [
+      {
+        name: "key",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tickLower", type: "int24" },
+          { name: "tickUpper", type: "int24" },
+          { name: "liquidityDelta", type: "int256" },
+          { name: "salt", type: "bytes32" },
+        ],
+      },
+    ],
+    // BalanceDelta is packed (int128 amount0, int128 amount1) inside an int256
+    // by v4-core. We don't decode the return value on the client.
+    outputs: [{ name: "delta", type: "int256" }],
+  },
+] as const;
+
+export const ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000" as const;

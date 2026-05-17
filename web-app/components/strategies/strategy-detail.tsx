@@ -9,6 +9,7 @@ import { DotMark } from "@/components/dot-mark";
 import { Navbar } from "@/components/navbar";
 import { DeployLiquidityCard } from "@/components/strategies/deploy-liquidity-card";
 import { LiquidityAtlas } from "@/components/strategies/liquidity-atlas";
+import { VanillaDepositCard } from "@/components/strategies/vanilla-deposit-card";
 import { useSLPBalance, useWalletBalance } from "@/hooks/use-slp-balance";
 import { STRATEGIES, type Strategy } from "@/lib/contracts";
 import { formatAmount } from "@/lib/utils";
@@ -137,11 +138,15 @@ function VanillaStrategyDetail({ strategy }: { strategy: Strategy }) {
 
         <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
           <PoolCard strategy={strategy} />
-          <WhyExistsSidebar strategy={strategy} aquaSibling={aquaSibling} />
+          <VanillaDepositCard strategy={strategy} />
+        </section>
+
+        <section className="mt-10">
+          <WhyExistsCallout strategy={strategy} aquaSibling={aquaSibling} />
         </section>
 
         {aquaSibling && (
-          <section className="mt-10">
+          <section className="mt-6">
             <CompareCallout strategy={strategy} aquaSibling={aquaSibling} />
           </section>
         )}
@@ -352,10 +357,12 @@ function RouteExplainer({ strategy }: { strategy: Strategy }) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Sidebar — "why this exists" (vanilla only)
+   Callout — "why this exists" (vanilla only). Full-width prose that runs
+   below the pool + deposit cards, explaining the role of this vanilla pool
+   as a baseline for the Aqua0 comparison.
    ─────────────────────────────────────────────────────────────────────────── */
 
-function WhyExistsSidebar({
+function WhyExistsCallout({
   strategy,
   aquaSibling,
 }: {
@@ -363,40 +370,40 @@ function WhyExistsSidebar({
   aquaSibling: Strategy | undefined;
 }) {
   return (
-    <aside className="rounded-2xl border border-white/10 bg-white/[0.015] p-6">
-      <header className="mb-4">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-white/40">
-          Why this strategy exists
+    <div className="rounded-2xl border border-white/10 bg-white/[0.015] p-6 sm:p-7">
+      <div className="grid gap-6 md:grid-cols-[1.4fr_1fr] md:items-center">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.28em] text-white/40">
+            Why this strategy exists
+          </div>
+          <h2 className="mt-1 text-[18px] font-semibold tracking-[-0.015em] text-white/85">
+            The baseline.
+          </h2>
+
+          <p className="mt-3 max-w-[640px] text-[13px] leading-[1.6] text-white/55">
+            Aqua0 needs a control group. We deployed this vanilla{" "}
+            {strategy.token.symbol}/USDC pool so an LP can compare what
+            their capital would earn{" "}
+            <span className="border-b border-dotted border-white/35 text-white/75">
+              without the SLP backing
+            </span>{" "}
+            — same fee tier, same tokens, same chain. Same deposit; earns
+            fees only from this pair; idle for the other 2 Aqua0 markets.
+          </p>
         </div>
-        <h2 className="mt-1 text-[18px] font-semibold tracking-[-0.015em] text-white/85">
-          The baseline.
-        </h2>
-      </header>
 
-      <p className="text-[13px] leading-[1.6] text-white/55">
-        Aqua0 needs a control group. We deployed this vanilla{" "}
-        {strategy.token.symbol}/USDC pool so an LP can compare what their
-        capital would earn{" "}
-        <span className="border-b border-dotted border-white/35 text-white/75">
-          without the SLP backing
-        </span>{" "}
-        — same fee tier, same tokens, same chain.
-      </p>
-
-      <p className="mt-3 text-[13px] leading-[1.6] text-white/55">
-        Same deposit. Earns fees only from this pair. Idle for the other 2
-        Aqua0 markets.
-      </p>
-
-      {aquaSibling && (
-        <Link
-          href={`/strategies/${aquaSibling.id}`}
-          className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-cyan px-4 py-2.5 text-[12px] font-semibold text-black transition-colors hover:bg-cyan-dim"
-        >
-          See the Aqua0 version →
-        </Link>
-      )}
-    </aside>
+        {aquaSibling && (
+          <div className="flex md:justify-end">
+            <Link
+              href={`/strategies/${aquaSibling.id}`}
+              className="inline-flex items-center justify-center rounded-lg bg-cyan px-4 py-2.5 text-[12px] font-semibold text-black transition-colors hover:bg-cyan-dim"
+            >
+              See the Aqua0 version →
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
