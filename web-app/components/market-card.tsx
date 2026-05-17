@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAccount } from "wagmi";
 import { useSLPBalance, useWalletBalance } from "@/hooks/use-slp-balance";
 import type { Market } from "@/lib/contracts";
@@ -15,7 +16,10 @@ import { formatAmount } from "@/lib/utils";
 
 export function MarketCard({ market }: { market: Market }) {
   return (
-    <article className="flex h-full flex-col rounded-xl border border-white/10 bg-card p-5 transition-colors hover:border-white/30">
+    <Link
+      href={`/strategies/${market.code.toLowerCase()}`}
+      className="group flex h-full flex-col rounded-xl border border-white/10 bg-card p-5 transition-colors hover:border-white/30"
+    >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="mb-4 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -39,12 +43,16 @@ export function MarketCard({ market }: { market: Market }) {
         ))}
       </div>
 
-      {/* ── Footnote ────────────────────────────────────────────────────── */}
-      <p className="mt-4 border-t border-white/[0.06] pt-3 text-[11.5px] leading-relaxed text-white/50">
-        Both issuers share the same SLP deposit. Your capital backs{" "}
-        <span className="text-cyan">both</span> at once.
-      </p>
-    </article>
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3">
+        <p className="text-[11.5px] leading-relaxed text-white/50">
+          Both issuers · one SLP deposit
+        </p>
+        <span className="text-[12px] font-medium text-white/65 transition-colors group-hover:text-cyan">
+          Open →
+        </span>
+      </div>
+    </Link>
   );
 }
 
