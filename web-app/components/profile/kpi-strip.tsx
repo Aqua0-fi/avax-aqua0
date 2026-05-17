@@ -2,7 +2,8 @@
 
 import { useAccount } from "wagmi";
 import { useSLPBalance } from "@/hooks/use-slp-balance";
-import { LATAM_STABLES, TOKENS } from "@/lib/contracts";
+import { useJitPositions } from "@/hooks/use-jit-positions";
+import { TOKENS } from "@/lib/contracts";
 import { formatAmount } from "@/lib/utils";
 
 // Sum of USDC deposit + (for the LATAM stables) deposited treated 1:1 with
@@ -21,6 +22,17 @@ export function KpiStrip() {
   const brlt = useSLPBalance(TOKENS.brlt);
   const mxnt = useSLPBalance(TOKENS.mxnt);
 
+  // Real per-user JIT declarations. A connected wallet with zero
+  // setJITPosition events has positions.length === 0 → no "markets
+  // backed", no capital multiplier. Previously these tiles were
+  // hardcoded to LATAM_STABLES.length so any connected wallet saw
+  // "3 markets, 3× multiplier" regardless of whether they'd actually
+  // declared anything.
+  const { positions } = useJitPositions();
+  const aqua0Positions = positions.filter(
+    (p) => p.strategy?.kind === "aqua0",
+  );
+
   const balances = [usdc, arst, brlt, mxnt];
   const totalDeposited = balances.reduce(
     (sum, b) => sum + (b.balance?.deposited ?? 0n),
@@ -37,6 +49,7 @@ export function KpiStrip() {
   const totalAvailableHuman = formatAmount(totalAvailable, 6, 0);
 
   const placeholder = !isConnected;
+  const marketsBacked = aqua0Positions.length;
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -51,12 +64,12 @@ export function KpiStrip() {
       />
       <Kpi
         label="Markets backed"
-        value={placeholder ? "0" : `${LATAM_STABLES.length}`}
+        value={placeholder ? "0" : `${marketsBacked}`}
         sub="aqua0 pools"
       />
       <Kpi
         label="Capital multiplier"
-        value={placeholder ? "0×" : `${LATAM_STABLES.length}×`}
+        value={placeholder ? "0×" : `${marketsBacked}×`}
         sub="vs vanilla LPing"
         tint="cyan"
       />
