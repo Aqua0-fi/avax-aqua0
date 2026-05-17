@@ -6,7 +6,7 @@
 // forces a full remount of consumers when this file changes.
 
 import { useState } from "react";
-import { parseGwei, parseUnits } from "viem";
+import { maxUint256, parseGwei, parseUnits } from "viem";
 import { useAccount, useConfig } from "wagmi";
 import {
   getTransactionCount,
@@ -33,11 +33,18 @@ import { FUJI_CHAIN_ID } from "@/lib/wagmi";
 const MAX_FEE_PER_GAS = parseGwei("50");
 const MAX_PRIORITY_FEE_PER_GAS = parseGwei("2");
 
-// The router pulls slightly more than `amount` per side due to V4 liquidity-
-// math rounding at the full-range edge ticks. We approve with a 5% buffer so
-// the modifyLiquidity call doesn't revert with ERC20InsufficientAllowance for
-// a few wei of slack. Trivial cost; high resilience.
-const APPROVE_SLACK_BPS = 500n; // +5%
+// V4's full-range liquidity math rounds the amount each side owes UP, so a
+// liquidityDelta of L pulls "L + a few wei" of each token. Two consequences:
+//
+//   1. We approve max uint per token instead of trying to track the exact
+//      slack — the router is trusted (it's a demo helper we deployed) and
+//      max-uint approvals are standard practice (Uniswap router, 1inch, etc).
+//   2. We shrink the liquidityDelta vs the human amount by 1% so the
+//      ceiling-rounded token amount comfortably fits within the user's
+//      balance. Without this, a user who minted exactly 10k via the faucet
+//      and tries to deposit 10k hits ERC20InsufficientBalance for a single
+//      rounding wei.
+const LIQUIDITY_SHRINK_BPS = 100n; // -1 %
 
 export type VanillaDepositStep =
   | "idle"
@@ -92,7 +99,11 @@ export function useVanillaDeposit() {
       setError("Amount must be greater than zero");
       return;
     }
-    const approveAmount = amountRaw + (amountRaw * APPROVE_SLACK_BPS) / 10_000n;
+    // Liquidity passed to V4 is shrunk slightly so the rounded-up token
+    // amounts each side actually owes fit inside the user's balance. See
+    // LIQUIDITY_SHRINK_BPS rationale above.
+    const liquidityDelta =
+      amountRaw - (amountRaw * LIQUIDITY_SHRINK_BPS) / 10_000n;
 
     const key = buildVanillaPoolKey(strategy);
     const currencies: ReadonlyArray<{
@@ -107,7 +118,10 @@ export function useVanillaDeposit() {
     ];
 
     try {
-      // ── 1 & 2. Approve both currencies (skip if allowance already covers) ──
+      // ── 1 & 2. Approve both currencies (max uint, skip if already done) ──
+      // Half-uint as the threshold: any existing max-uint allowance comfortably
+      // exceeds this; partial allowances from older code paths get re-approved.
+      const APPROVE_THRESHOLD = maxUint256 / 2n;
       for (const { address: currency, stepLabel } of currencies) {
         setStep(stepLabel);
         const allowance = (await readContract(config, {
@@ -117,7 +131,7 @@ export function useVanillaDeposit() {
           args: [address, FUJI_DEPLOYMENT.liquidityRouter],
         })) as bigint;
 
-        if (allowance < amountRaw) {
+        if (allowance < APPROVE_THRESHOLD) {
           const nonce = await getTransactionCount(config, {
             address,
             chainId: FUJI_CHAIN_ID,
@@ -129,7 +143,7 @@ export function useVanillaDeposit() {
             address: currency,
             abi: ERC20_ABI,
             functionName: "approve",
-            args: [FUJI_DEPLOYMENT.liquidityRouter, approveAmount],
+            args: [FUJI_DEPLOYMENT.liquidityRouter, maxUint256],
             maxFeePerGas: MAX_FEE_PER_GAS,
             maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
           });
@@ -155,7 +169,7 @@ export function useVanillaDeposit() {
           {
             tickLower: FULL_RANGE_TICKS.tickLower,
             tickUpper: FULL_RANGE_TICKS.tickUpper,
-            liquidityDelta: amountRaw,
+            liquidityDelta,
             salt: ZERO_BYTES32,
           },
         ],
