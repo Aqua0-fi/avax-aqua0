@@ -1,22 +1,57 @@
 "use client";
 
+import { useMemo } from "react";
+import { formatUnits } from "viem";
 import { useAccount } from "wagmi";
 import { useDeposit } from "@/hooks/use-deposit";
 import { useJitPreference } from "@/hooks/use-jit-preference";
 import { useMint } from "@/hooks/use-mint";
-import { TOKEN_LIST, TOKENS } from "@/lib/contracts";
+import { useWalletBalance } from "@/hooks/use-slp-balance";
+import { TOKEN_LIST, TOKENS, type TokenMeta } from "@/lib/contracts";
 
-const DEPOSIT_AMOUNT = "20000"; // The pitch number — 20k that backs 3 Twin markets.
+const JIT_AMOUNT = "20000"; // Pitch number — declares 20k of JIT depth per pool.
 
 // Quick-action panel on /profile. Three explicit buttons matching the demo's
-// happy path: faucet all tokens, deposit 20k USDC into the SLP, declare JIT
-// preferences across all three Twin aqua0 markets. Aimed at a judge who
-// lands here fresh and wants to drive the demo without reading docs.
+// happy path: faucet all tokens, deposit every wallet balance into the SLP,
+// then declare JIT preferences across all three Twin aqua0 markets. Aimed
+// at a judge who lands here fresh and wants to drive the demo without
+// reading docs.
+//
+// Why "deposit all" instead of "deposit 20k USDC": the JIT hook needs BOTH
+// sides of the pair in the SLP (USDC + the Twin LATAM stable) to pull
+// transient depth on swap. A USDC-only deposit leaves swaps falling back
+// to the seeded vanilla depth — silently undermining the pitch.
 export function JitActions() {
   const { isConnected } = useAccount();
   const { mint, isPending: mintBusy } = useMint();
   const deposit = useDeposit();
   const jit = useJitPreference();
+
+  // Read wallet balances for every token the SLP can usefully hold (USDC
+  // + the 3 Twin LATAM stables). wARS / wBRL are excluded — they're part
+  // of the vanilla baseline flow, not Aqua0 routing, so depositing them
+  // into the SLP would do nothing.
+  const depositableTokens: TokenMeta[] = useMemo(
+    () => [TOKENS.usdc, TOKENS.arst, TOKENS.brlt, TOKENS.mxnt],
+    [],
+  );
+  const wUsdc = useWalletBalance(TOKENS.usdc);
+  const wArst = useWalletBalance(TOKENS.arst);
+  const wBrlt = useWalletBalance(TOKENS.brlt);
+  const wMxnt = useWalletBalance(TOKENS.mxnt);
+  const walletReads = [wUsdc, wArst, wBrlt, wMxnt];
+
+  // Sum of all balances we'll be depositing (preview number for the
+  // subtitle). All four tokens are 6 decimals so summing raw bigints is
+  // safe; the formatted total is purely cosmetic.
+  const totalToDepositHuman = useMemo(() => {
+    const total =
+      (wUsdc.balance ?? 0n) +
+      (wArst.balance ?? 0n) +
+      (wBrlt.balance ?? 0n) +
+      (wMxnt.balance ?? 0n);
+    return total > 0n ? Number(formatUnits(total, 6)).toLocaleString() : "0";
+  }, [wUsdc.balance, wArst.balance, wBrlt.balance, wMxnt.balance]);
 
   async function handleMintAll() {
     for (const token of TOKEN_LIST) {
@@ -24,12 +59,22 @@ export function JitActions() {
     }
   }
 
-  async function handleDeposit() {
-    await deposit.deposit(TOKENS.usdc, DEPOSIT_AMOUNT);
+  async function handleDepositAll() {
+    for (let i = 0; i < depositableTokens.length; i++) {
+      const token = depositableTokens[i];
+      const balance = walletReads[i].balance;
+      if (!balance || balance === 0n) continue;
+      // formatUnits gives back the exact bigint when re-parsed at the
+      // same decimals, so no precision is lost on the round-trip inside
+      // useDeposit (parseUnits(formatUnits(x, d), d) === x).
+      const human = formatUnits(balance, token.decimals);
+      await deposit.deposit(token, human);
+      walletReads[i].refetch();
+    }
   }
 
   async function handleBackAllMarkets() {
-    await jit.backAllLatamPools(DEPOSIT_AMOUNT);
+    await jit.backAllLatamPools(JIT_AMOUNT);
   }
 
   const disabled = !isConnected;
@@ -56,18 +101,22 @@ export function JitActions() {
         />
         <Step
           n={2}
-          title={`Deposit ${DEPOSIT_AMOUNT} USDC into the SLP`}
-          subtitle="One approve + one deposit transaction."
+          title="Deposit everything in your wallet into the SLP"
+          subtitle={
+            isConnected
+              ? `~${totalToDepositHuman} across USDC + ARSt + BRLt + MXNt. Approve + deposit per token, skipping zero balances.`
+              : "USDC + the 3 Twin LATAM stables. Approve + deposit per token."
+          }
           buttonLabel={
             deposit.step === "approving"
               ? "Approving…"
               : deposit.step === "depositing"
               ? "Depositing…"
               : deposit.step === "done"
-              ? "Deposited"
-              : "Deposit"
+              ? "Deposit more"
+              : "Deposit all"
           }
-          onClick={handleDeposit}
+          onClick={handleDepositAll}
           disabled={
             disabled ||
             (deposit.step !== "idle" &&

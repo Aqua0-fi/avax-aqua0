@@ -11,9 +11,10 @@ import { cn, formatAmount } from "@/lib/utils";
 
 // DepositCard — the general-purpose 'move wallet → SLP' surface on /profile.
 //
-// JitActions has a scripted 'deposit 20k USDC' step for the demo's happy
-// path; this card complements it for any token + any amount. Reuses the
-// TokenSelect dropdown from the swap surface so the UI stays consistent.
+// JitActions has a one-click "Deposit all wallet balances" step for the
+// demo's happy path; this card complements it for picking any single token
+// at any amount. Reuses the TokenSelect dropdown from the swap surface so
+// the UI stays consistent.
 
 export function DepositCard() {
   const { isConnected } = useAccount();
