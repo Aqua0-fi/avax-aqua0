@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseUnits } from "viem";
+import { parseGwei, parseUnits } from "viem";
 import {
   useAccount,
   useWriteContract,
@@ -9,6 +9,17 @@ import {
 } from "wagmi";
 import { ERC20_ABI, type TokenMeta } from "@/lib/contracts";
 import { FUJI_CHAIN_ID } from "@/lib/wagmi";
+
+// Avalanche Fuji's RPC reports a baseFeePerGas as low as 1 wei when the
+// chain is idle, and MetaMask's estimator naively adds a 1-wei tip on top.
+// The result is a maxFeePerGas of 2 wei (yes — literally two wei), which
+// validators correctly refuse to include. The tx then sits in MetaMask's
+// outbound queue forever and the user thinks the app is broken.
+//
+// We force EIP-1559 fees high enough to clear any validator floor, while
+// staying trivially cheap (50 gwei × 50k gas ≈ 0.0000025 AVAX per mint).
+const MAX_FEE_PER_GAS = parseGwei("50");
+const MAX_PRIORITY_FEE_PER_GAS = parseGwei("2");
 
 // Wallets occasionally return a tx hash but never actually broadcast (RPC
 // misconfigured, nonce desync, etc.). 30s is well past Fuji's worst-case
@@ -71,6 +82,8 @@ export function useMint() {
       abi: ERC20_ABI,
       functionName: "mint",
       args: [address, amount],
+      maxFeePerGas: MAX_FEE_PER_GAS,
+      maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
     });
     setPendingHash(hash);
     return hash;

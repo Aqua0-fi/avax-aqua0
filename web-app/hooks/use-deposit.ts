@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { parseUnits } from "viem";
+import { parseGwei, parseUnits } from "viem";
 import { useAccount, useConfig } from "wagmi";
 import {
   readContract,
@@ -10,6 +10,14 @@ import {
 } from "@wagmi/core";
 import { ERC20_ABI, FUJI_DEPLOYMENT, SLP_ABI, type TokenMeta } from "@/lib/contracts";
 import { FUJI_CHAIN_ID } from "@/lib/wagmi";
+
+// Force EIP-1559 fees high enough to clear Avalanche Fuji validator floors.
+// Fuji's reported baseFeePerGas drops to 1 wei when idle, and MetaMask's
+// estimator faithfully suggests 2 wei — which then gets ignored by every
+// validator and the tx sits in the wallet's queue forever. 50 gwei is
+// ~0.0000025 AVAX per simple call: trivially cheap, but actually included.
+const MAX_FEE_PER_GAS = parseGwei("50");
+const MAX_PRIORITY_FEE_PER_GAS = parseGwei("2");
 
 export type DepositStep =
   | "idle"
@@ -58,6 +66,8 @@ export function useDeposit() {
           abi: ERC20_ABI,
           functionName: "approve",
           args: [FUJI_DEPLOYMENT.slp, amount],
+          maxFeePerGas: MAX_FEE_PER_GAS,
+          maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
         });
         await waitForTransactionReceipt(config, { hash: approveHash });
       }
@@ -69,6 +79,8 @@ export function useDeposit() {
         abi: SLP_ABI,
         functionName: "deposit",
         args: [token.address, amount, address],
+        maxFeePerGas: MAX_FEE_PER_GAS,
+        maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
       });
       await waitForTransactionReceipt(config, { hash: depositHash });
 

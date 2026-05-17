@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { parseUnits } from "viem";
+import { parseGwei, parseUnits } from "viem";
 import { useAccount, useConfig } from "wagmi";
 import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
 import {
@@ -11,6 +11,13 @@ import {
   TOKENS,
 } from "@/lib/contracts";
 import { FUJI_CHAIN_ID } from "@/lib/wagmi";
+
+// Force EIP-1559 fees above Avalanche Fuji's validator floor — see the same
+// note in use-mint.ts. Default wallet estimation lands at 2 wei because
+// idle Fuji reports baseFeePerGas = 1 wei, and validators silently refuse
+// to include such txs.
+const MAX_FEE_PER_GAS = parseGwei("50");
+const MAX_PRIORITY_FEE_PER_GAS = parseGwei("2");
 
 // The "magic moment" of Aqua0 — the LP declares that their SLP capital
 // should back a specific V4 pool. The Aqua0 hook reads this declaration
@@ -55,6 +62,8 @@ export function useJitPreference() {
           amount0,
           amount1,
         ],
+        maxFeePerGas: MAX_FEE_PER_GAS,
+        maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
       });
       await waitForTransactionReceipt(config, { hash });
       return hash;
