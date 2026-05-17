@@ -1,5 +1,20 @@
 "use client";
 
+// @refresh reset
+//
+// React Fast Refresh in Next.js dev mode hot-swaps function bodies of edited
+// modules without re-mounting consumers. That works great for components,
+// but for custom hooks it explodes the moment we change the number / order
+// of hook calls inside the function — React tracks hook calls by position,
+// and the swap drops in a new function whose hook call sequence doesn't
+// match what was recorded last render → "Rendered more hooks than during
+// the previous render". The `@refresh reset` pragma flags this file: when
+// it changes, every consumer of the exported hooks is fully unmounted +
+// remounted, dodging the position-mismatch entirely. The runtime cost is
+// zero in production — the directive is only read by Fast Refresh.
+// See: https://react.dev/reference/react/StrictMode (devtools companion)
+//      https://github.com/facebook/react/blob/main/packages/react-refresh
+
 import { parseAbiItem } from "viem";
 import { useAccount, usePublicClient, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";

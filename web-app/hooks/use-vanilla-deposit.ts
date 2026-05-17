@@ -1,5 +1,10 @@
 "use client";
 
+// @refresh reset — see use-slp-balance.ts for the full rationale. Custom
+// hooks whose internal hook count changes between edits crash Fast Refresh
+// with "Rendered more hooks than during the previous render"; this pragma
+// forces a full remount of consumers when this file changes.
+
 import { useState } from "react";
 import { parseGwei, parseUnits } from "viem";
 import { useAccount, useConfig } from "wagmi";
