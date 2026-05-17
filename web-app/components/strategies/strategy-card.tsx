@@ -107,11 +107,6 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
               : "—"
           }
         />
-        <Row
-          label="Fee · 30d"
-          value={isAqua ? "$72 (mocked)" : "$12"}
-          tint="muted"
-        />
       </dl>
 
       {/* ── Footer CTAs ─────────────────────────────────────────────── */}

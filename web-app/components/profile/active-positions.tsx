@@ -1,25 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Sparkles } from "lucide-react";
 import { useAccount } from "wagmi";
 import { DotMark } from "@/components/dot-mark";
 import { useJitPositions, type JitPosition } from "@/hooks/use-jit-positions";
 import { TOKENS } from "@/lib/contracts";
 import { formatAmount } from "@/lib/utils";
 
-// ActivePositions — the centrepiece of /profile once the LP starts backing
-// strategies. Reads the JITPositionSet event stream (via useJitPositions)
-// and renders one card per (lp, poolId) latest declaration.
+// ActivePositions — the dashboard hero on /profile, modelled after the
+// "Active positions" panel in the production app.aqua0.xyz. One row per
+// JIT declaration with four columns of metadata (Range / Committed /
+// amount0 / amount1) so each card holds enough density to read like a
+// professional LP dashboard instead of a faucet receipt.
 //
-// Why this matters for the demo: the moment the LP backs a second
-// strategy, this dashboard shows TWO cards backed by the SAME SLP
-// balance. After backing all three Twin pools the LP sees three cards
-// and the KpiStrip's "Total in SLP" hasn't moved. That's the pitch made
-// visible.
-//
-// Empty state nudges first-timers towards /strategies. Disconnected
-// state nudges them to connect.
+// Why list-style instead of a grid of small cards: the pitch is "the LP
+// can have N positions backed by the same SLP". A list scales linearly
+// with N — five positions, ten positions, twenty — without forcing the
+// rest of the page below the fold. Grid layouts cap visual density at
+// 2-3 columns before the cards shrink.
 
 const SNOWTRACE_TX = "https://testnet.snowtrace.io/tx/";
 
@@ -28,27 +27,23 @@ export function ActivePositions() {
   const { positions, isLoading } = useJitPositions();
 
   return (
-    <section className="rounded-xl border border-cyan/25 bg-cyan/[0.03] p-5 sm:p-6">
-      <header className="mb-5 flex items-start justify-between gap-3">
-        <div>
-          <div className="mb-1 inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.28em] text-cyan">
-            <DotMark />
-            Active positions
-          </div>
-          <h2 className="text-[18px] font-semibold tracking-[-0.015em] text-white">
-            Strategies you&apos;re backing
-          </h2>
-          <p className="mt-1 max-w-[640px] text-[12.5px] leading-[1.55] text-white/60">
-            Each card is a{" "}
-            <code className="font-mono text-cyan/85">setJITPosition</code>{" "}
-            declaration on-chain — the Aqua0 hook draws on your SLP
-            balance for these pools at swap time. Same capital, every
-            position.
-          </p>
+    <section className="rounded-2xl border border-white/10 bg-white/[0.015] p-5 sm:p-6">
+      <header className="mb-5 flex items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.28em] text-white/55">
+          <DotMark />
+          Active positions
+          {isConnected && positions.length > 0 && (
+            <span className="ml-1 rounded-full border border-white/15 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] text-white/75">
+              {positions.length}
+            </span>
+          )}
         </div>
-        <span className="shrink-0 rounded-full border border-cyan/30 bg-cyan/[0.06] px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-cyan">
-          {isConnected ? positions.length : 0} active
-        </span>
+        <Link
+          href="/strategies"
+          className="text-[11.5px] font-semibold text-cyan transition-colors hover:text-white"
+        >
+          + Add another →
+        </Link>
       </header>
 
       {!isConnected ? (
@@ -69,9 +64,9 @@ export function ActivePositions() {
           cta={{ label: "Open strategies", href: "/strategies" }}
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="flex flex-col gap-2.5">
           {positions.map((p) => (
-            <PositionCard key={p.poolId} position={p} />
+            <PositionRow key={p.poolId} position={p} />
           ))}
         </ul>
       )}
@@ -79,27 +74,27 @@ export function ActivePositions() {
   );
 }
 
-// ─── A single position card ────────────────────────────────────────────────
+// ─── A single position row ────────────────────────────────────────────────
 
-function PositionCard({ position }: { position: JitPosition }) {
-  // Pick the non-USDC token for the headline avatar / accent so the card
-  // visually reads as "{LATAM stable}-backed", not "USDC-paired-with-X".
-  const latam =
-    position.token0.address === TOKENS.usdc.address
-      ? position.token1
-      : position.token0;
-  const usdc =
-    position.token0.address === TOKENS.usdc.address
-      ? position.token0
-      : position.token1;
-  const usdcAmount =
-    position.token0.address === TOKENS.usdc.address
-      ? position.amount0
-      : position.amount1;
-  const latamAmount =
-    position.token0.address === TOKENS.usdc.address
-      ? position.amount1
-      : position.amount0;
+function PositionRow({ position }: { position: JitPosition }) {
+  // Normalise to (usdc, latam) regardless of V4 currency sort so the
+  // card always reads "{LATAM}/USDC" in the header and the per-side
+  // amounts are tied to the right ticker.
+  const usdcIsToken0 = position.token0.address === TOKENS.usdc.address;
+  const usdc = usdcIsToken0 ? position.token0 : position.token1;
+  const latam = usdcIsToken0 ? position.token1 : position.token0;
+  const usdcAmount = usdcIsToken0 ? position.amount0 : position.amount1;
+  const latamAmount = usdcIsToken0 ? position.amount1 : position.amount0;
+
+  // 1:1 demo pricing — every LATAM stable is pegged to USD in our mocks,
+  // so the committed-USD figure is just the sum of both sides.
+  const committedUsd = formatAmount(
+    usdcAmount + latamAmount,
+    usdc.decimals,
+    0,
+  );
+  const usdcUsd = formatAmount(usdcAmount, usdc.decimals, 0);
+  const latamUsd = formatAmount(latamAmount, latam.decimals, 0);
 
   const issuerLabel =
     position.strategy?.issuer === "twin"
@@ -108,59 +103,87 @@ function PositionCard({ position }: { position: JitPosition }) {
         ? "Ripio"
         : "Mock";
   const marketLabel = position.strategy?.marketLabel ?? "Unknown market";
-  const marketFlag = position.strategy?.marketFlag ?? "";
 
-  return (
-    <li className="group flex h-full flex-col rounded-lg border border-white/10 bg-card p-4 transition-colors hover:border-cyan/40">
-      {/* ── Header — token avatar + symbol + issuer chip ────────────── */}
-      <header className="mb-3 flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
+  const inner = (
+    <article className="group rounded-xl border border-white/[0.08] bg-card/80 p-4 transition-colors hover:border-cyan/40 sm:p-5">
+      {/* ── Header — token pair + chain + status ──────────────────── */}
+      <header className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Overlapping token avatars */}
+        <div className="relative flex shrink-0">
           <span
-            className="h-2.5 w-2.5 rounded-full"
+            className="grid h-9 w-9 place-items-center rounded-full border-2 border-card text-[12px] font-bold text-black"
             style={{
               background: latam.accent,
-              boxShadow: `0 0 8px ${latam.accent}88`,
+              boxShadow: `0 0 12px ${latam.accent}66`,
             }}
-          />
-          <div className="leading-tight">
-            <div className="text-[13.5px] font-semibold tracking-[-0.01em] text-white">
-              {latam.symbol} / {usdc.symbol}
-            </div>
-            <div className="mt-0.5 text-[10.5px] text-white/45">
-              {marketFlag} {marketLabel} · {issuerLabel}
-            </div>
+            title={latam.symbol}
+          >
+            {symbolGlyph(latam.symbol)}
+          </span>
+          <span
+            className="-ml-3 grid h-9 w-9 place-items-center rounded-full border-2 border-card text-[12px] font-bold text-black"
+            style={{
+              background: usdc.accent,
+              boxShadow: `0 0 12px ${usdc.accent}66`,
+            }}
+            title={usdc.symbol}
+          >
+            {symbolGlyph(usdc.symbol)}
+          </span>
+        </div>
+
+        <div className="leading-tight">
+          <div className="text-[16px] font-semibold tracking-[-0.01em] text-white">
+            {latam.symbol}/{usdc.symbol}
+          </div>
+          <div className="mt-0.5 text-[11px] text-white/45">
+            {position.strategy?.marketFlag} {marketLabel} · {issuerLabel}
           </div>
         </div>
-        <span className="shrink-0 rounded-full border border-cyan/30 bg-cyan/10 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-cyan">
-          Backing
-        </span>
+
+        <ChainPill targetChainId={position.targetChainId} />
+
+        <ActiveBadge />
       </header>
 
-      {/* ── Amounts declared ────────────────────────────────────────── */}
-      <dl className="mb-3 grid grid-cols-2 gap-2">
-        <AmountCell
+      {/* ── Metric row — Range / Committed / amount0 / amount1 ───── */}
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+        <Metric
+          label="Range"
+          value="Full range"
+          sub={`${formatTick(position.tickLower)} to ${formatTick(
+            position.tickUpper,
+          )}`}
+        />
+        <Metric
+          label="Committed"
+          value={`$${committedUsd}`}
+          sub="USD declared"
+          tint="cyan"
+        />
+        <Metric
           label={latam.symbol}
           value={formatAmount(latamAmount, latam.decimals, 0)}
-          accent={latam.accent}
+          sub={`$${latamUsd}`}
         />
-        <AmountCell
+        <Metric
           label={usdc.symbol}
           value={formatAmount(usdcAmount, usdc.decimals, 0)}
-          accent={usdc.accent}
+          sub={`$${usdcUsd}`}
         />
       </dl>
 
-      {/* ── Footer — detail link + Snowtrace ────────────────────────── */}
-      <div className="mt-auto flex items-center justify-between border-t border-white/[0.06] pt-3 text-[11px]">
+      {/* ── Footer — strategy + snowtrace ─────────────────────────── */}
+      <footer className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3 text-[11px]">
         {position.strategy ? (
           <Link
             href={`/strategies/${position.strategy.id}`}
-            className="font-semibold text-cyan transition-colors hover:text-white"
+            className="font-semibold text-cyan/85 transition-colors hover:text-white"
           >
-            Strategy →
+            Open strategy →
           </Link>
         ) : (
-          <span className="text-white/40">No strategy page</span>
+          <span className="text-white/40">Pool not surfaced in this build</span>
         )}
         <a
           href={`${SNOWTRACE_TX}${position.txHash}`}
@@ -169,38 +192,69 @@ function PositionCard({ position }: { position: JitPosition }) {
           className="inline-flex items-center gap-1 font-mono text-white/50 transition-colors hover:text-white"
           title="View setJITPosition tx on Snowtrace"
         >
-          {position.txHash.slice(0, 6)}…{position.txHash.slice(-4)}
+          {position.txHash.slice(0, 8)}…{position.txHash.slice(-6)}
           <ExternalLink className="h-3 w-3" />
         </a>
-      </div>
-    </li>
+      </footer>
+    </article>
   );
+
+  return <li>{inner}</li>;
 }
 
-function AmountCell({
+// ─── Atoms ─────────────────────────────────────────────────────────────────
+
+function Metric({
   label,
   value,
-  accent,
+  sub,
+  tint = "white",
 }: {
   label: string;
   value: string;
-  accent: string;
+  sub?: string;
+  tint?: "cyan" | "white";
 }) {
   return (
-    <div className="rounded-md border border-white/[0.06] bg-black/30 px-3 py-2">
-      <div className="flex items-center gap-1.5">
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ background: accent }}
-        />
-        <span className="text-[9.5px] uppercase tracking-[0.18em] text-white/40">
-          {label}
-        </span>
-      </div>
-      <div className="mt-0.5 font-mono text-[13.5px] font-semibold text-white">
+    <div>
+      <dt className="text-[9.5px] uppercase tracking-[0.22em] text-white/40">
+        {label}
+      </dt>
+      <dd
+        className={`mt-1 text-[18px] font-semibold tracking-[-0.01em] ${
+          tint === "cyan" ? "text-cyan" : "text-white"
+        }`}
+      >
         {value}
-      </div>
+      </dd>
+      {sub && (
+        <div className="mt-0.5 text-[10.5px] text-white/45">{sub}</div>
+      )}
     </div>
+  );
+}
+
+function ChainPill({ targetChainId }: { targetChainId: number }) {
+  // Source chain is always Fuji on this build; targetChainId comes from
+  // the JIT declaration itself. They'll match in the same-chain demo,
+  // and diverge once the real cross-chain mainnet path lands.
+  const sourceLabel = chainLabel(43113);
+  const targetLabel = chainLabel(targetChainId);
+  const sameChain = sourceLabel === targetLabel;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[10.5px] font-medium text-white/65">
+      <span className="h-1.5 w-1.5 rounded-full bg-cyan shadow-[0_0_4px_#7FE5E5]" />
+      {sameChain ? sourceLabel : `${sourceLabel} → ${targetLabel}`}
+    </span>
+  );
+}
+
+function ActiveBadge() {
+  return (
+    <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-cyan/35 bg-cyan/[0.08] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan">
+      <Sparkles className="h-3 w-3" />
+      Active
+    </span>
   );
 }
 
@@ -217,7 +271,7 @@ function EmptyState({
 }) {
   return (
     <div
-      className={`rounded-lg border border-white/[0.06] bg-black/30 px-5 py-6 text-center ${
+      className={`rounded-xl border border-white/[0.06] bg-black/30 px-5 py-8 text-center ${
         muted ? "opacity-70" : ""
       }`}
     >
@@ -235,4 +289,32 @@ function EmptyState({
       )}
     </div>
   );
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+// Single-character avatar glyph. ARSt → "A", BRLt → "B", MXNt → "M", wARS
+// → "A", USDC → "$". Lets us show the pair without bundling token SVGs
+// for the demo. Real deploys would swap in 24x24 icons.
+function symbolGlyph(symbol: string): string {
+  if (symbol === "USDC") return "$";
+  return symbol.replace(/^w/, "")[0]?.toUpperCase() ?? "?";
+}
+
+function chainLabel(chainId: number): string {
+  if (chainId === 43113) return "Avalanche Fuji";
+  if (chainId === 43114) return "Avalanche";
+  if (chainId === 1) return "Ethereum";
+  if (chainId === 8453) return "Base";
+  if (chainId === 84532) return "Base Sepolia";
+  return `Chain ${chainId}`;
+}
+
+// Ticks at the full-range boundaries are -887220 / 887220; show them as
+// ±∞ in the UI because that's what they represent (the V4 price range
+// extreme), not because the data is missing.
+function formatTick(tick: number): string {
+  if (tick <= -887220) return "−∞";
+  if (tick >= 887220) return "+∞";
+  return tick.toString();
 }

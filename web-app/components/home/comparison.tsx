@@ -14,7 +14,6 @@ const VANILLA_ROWS: Row[] = [
   { label: "Deposit destination", value: "Split across 2 vanilla pools" },
   { label: "Markets backed", value: "2 of 5 (wARS, wBRL only)" },
   { label: "Idle on the other 3", value: "ARSt, BRLt, MXNt" },
-  { label: "Fees · 30d", value: "$24" },
   { label: "Capital efficiency", value: "1× (baseline)" },
 ];
 
@@ -22,7 +21,6 @@ const AQUA0_ROWS: Row[] = [
   { label: "Deposit destination", value: "Shared Liquidity Pool" },
   { label: "Markets backed", value: "3 of 3 (Twin)" },
   { label: "Idle on the others", value: "None — JIT routes capital" },
-  { label: "Fees · 30d", value: "$72 (mocked)" },
   { label: "Capital efficiency", value: "3× (same deposit)" },
 ];
 

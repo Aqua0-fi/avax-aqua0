@@ -494,7 +494,6 @@ function CompareCallout({
             <CompareRow label="Hook" value="None" />
             <CompareRow label="Markets backed" value="1 of 3" />
             <CompareRow label="Capital efficiency" value="1× (baseline)" />
-            <CompareRow label="Fees · 30d" value="$12" />
           </dl>
         </div>
         <div className="border-t border-white/10 p-6 sm:border-l sm:border-t-0 sm:p-7">
@@ -509,7 +508,6 @@ function CompareCallout({
             <CompareRow label="Hook" value="Aqua0" tint="cyan" />
             <CompareRow label="Markets backed" value="3 of 3" tint="cyan" />
             <CompareRow label="Capital efficiency" value="3×" tint="cyan" />
-            <CompareRow label="Fees · 30d" value="$72 (mocked)" tint="cyan" />
           </dl>
           <Link
             href={`/strategies/${aquaSibling.id}`}
