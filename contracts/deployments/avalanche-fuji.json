@@ -10,6 +10,7 @@
   "hookFactory": "0xd9C0Fa78334D12d1454860802FDAe08Bc053875f",
   "liquidityRouter": "0xa3e4EC3fcd8e854437E69570BA385fD172830a2D",
   "swapRouter": "0xF267Faa603C41C3A4c644aCe91126a485caCE76D",
+  "swapSimulator": "0xD1015cdbb26A92F61409563f1a4C8dd8d01CD66d",
   "backendSigner": "0x235713C4CA6A8cd2adc0333F64d1b453BfCdBbfd",
   "tokens": {
     "usdc": "0xffd244F82765C12c689e47081fE5534f5395b87B",

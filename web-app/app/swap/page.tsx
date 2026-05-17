@@ -3,6 +3,7 @@ import { HeroWaves } from "@/components/aquatic-waves";
 import { DotMark } from "@/components/dot-mark";
 import { Navbar } from "@/components/navbar";
 import { FeeComparison } from "@/components/swap/fee-comparison";
+import { RunSwapsButton } from "@/components/swap/run-swaps-button";
 
 // /swap — the demo's quantitative panel. We don't render a swap form here
 // any more (the previous build had one as a UI preview only). The page is
@@ -39,6 +40,9 @@ export default function SwapPage() {
             across.
           </p>
         </section>
+
+        {/* ── Run swaps button — let a judge trigger the data themselves ── */}
+        <RunSwapsButton />
 
         {/* ── Comparison panel ─────────────────────────────────────────── */}
         <FeeComparison />

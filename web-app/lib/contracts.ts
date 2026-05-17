@@ -33,6 +33,11 @@ export const FUJI_DEPLOYMENT = {
   //   2. Eventually, an in-app "swap" CTA if/when we wire one up — today
   //      the page is read-only (comparison panel of pool stats).
   swapRouter:      "0xF267Faa603C41C3A4c644aCe91126a485caCE76D" as Address,
+  // Demo helper that lets anyone trigger a batch of swaps in a single
+  // tx. Holds its own token balance so the caller doesn't need to faucet
+  // or approve anything — they just pay the gas. Powers the "Run N
+  // swaps" button on /swap. Deployed via DeploySwapSimulator.s.sol.
+  swapSimulator:   "0xD1015cdbb26A92F61409563f1a4C8dd8d01CD66d" as Address,
   // The block at which the v2 SLP went live. Used as the lower bound for
   // getLogs() when computing per-user SLP balances from Deposited /
   // Withdrawn events. Pulled from deployments/avalanche-fuji.json.
@@ -529,6 +534,38 @@ export const SWAP_ROUTER_ABI = [
       },
     ],
     outputs: [{ name: "delta", type: "int256" }],
+  },
+] as const;
+
+// SwapSimulator ABI — `runBatch(uint8 count)` is the only entrypoint the
+// frontend needs. Count must be a multiple of 5 in [5, 25]; the contract
+// runs count/5 swaps per pool on both sides for a fair comparison.
+export const SWAP_SIMULATOR_ABI = [
+  {
+    type: "function",
+    name: "runBatch",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "count", type: "uint8" }],
+    outputs: [],
+  },
+  {
+    type: "event",
+    name: "BatchStarted",
+    inputs: [
+      { name: "caller", type: "address", indexed: true },
+      { name: "count", type: "uint8", indexed: false },
+      { name: "timestamp", type: "uint256", indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "BatchFinished",
+    inputs: [
+      { name: "caller", type: "address", indexed: true },
+      { name: "count", type: "uint8", indexed: false },
+    ],
+    anonymous: false,
   },
 ] as const;
 
