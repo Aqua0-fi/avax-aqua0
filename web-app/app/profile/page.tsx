@@ -5,15 +5,17 @@ import { useAccount } from "wagmi";
 import { HeroWaves } from "@/components/aquatic-waves";
 import { DotMark } from "@/components/dot-mark";
 import { Navbar } from "@/components/navbar";
+import { ActivePositions } from "@/components/profile/active-positions";
 import { DepositCard } from "@/components/profile/deposit-card";
 import { JitActions } from "@/components/profile/jit-actions";
 import { KpiStrip } from "@/components/profile/kpi-strip";
 import { SLPInventory } from "@/components/profile/slp-inventory";
 import { shortAddr } from "@/lib/utils";
 
-// /profile — what an LP sees about their own position. KPI strip at the top,
-// SLP inventory in the main column, quick-action panel in the sidebar. No
-// withdraw UI yet (TODO post-hackathon).
+// /profile — what an LP sees about their own position. Layout follows the
+// dashboard pattern from app.aqua0.xyz: KPI strip, then a full-width
+// "active positions" hero (one card per JIT declaration), then the SLP
+// inventory + quick actions side-by-side. No withdraw UI yet (TODO).
 export default function ProfilePage() {
   const { address, isConnected } = useAccount();
 
@@ -69,16 +71,21 @@ export default function ProfilePage() {
         )}
 
         {/* ── KPI strip ─────────────────────────────────────────────── */}
-        <section className="mb-8">
+        <section className="mb-6">
           <KpiStrip />
+        </section>
+
+        {/* ── Active positions — the "you're backing N markets" hero ── */}
+        <section className="mb-6">
+          <ActivePositions />
         </section>
 
         {/* ── Inventory + Actions ───────────────────────────────────── */}
         <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
           <SLPInventory />
           <div className="flex flex-col gap-5">
-            <DepositCard />
             <JitActions />
+            <DepositCard />
           </div>
         </section>
       </div>
