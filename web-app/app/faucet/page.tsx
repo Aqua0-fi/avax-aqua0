@@ -111,64 +111,103 @@ function FaucetRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between rounded-xl border bg-card px-5 py-4 transition-colors",
+        "rounded-xl border bg-card transition-colors",
         showDone
           ? "border-cyan/40"
           : mint.error
           ? "border-red-400/40"
+          : mint.isConfirming
+          ? "border-cyan/25"
           : "border-white/10 hover:border-white/30",
       )}
     >
-      <div className="flex items-center gap-4">
-        <span
-          className="h-9 w-9 rounded-full"
-          style={{
-            background: token.accent,
-            boxShadow: `0 0 12px ${token.accent}40`,
-          }}
-        />
-        <div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">
-              {token.symbol}
-            </span>
-            <span className="text-[11px] text-white/40">{issuerLabel}</span>
-          </div>
-          <div className="mt-0.5 flex items-center gap-2 font-mono text-[12px] text-white/50">
-            <span>Balance {formatAmount(wallet.balance, token.decimals, 2)}</span>
-            {mint.txHash && (
-              <a
-                href={`${SNOWTRACE_TX}${mint.txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[10.5px] text-white/45 transition-colors hover:text-cyan"
-              >
-                <ExternalLink className="h-2.5 w-2.5" />
-                tx
-              </a>
-            )}
+      <div className="flex items-center justify-between px-5 py-4">
+        <div className="flex items-center gap-4">
+          <span
+            className="h-9 w-9 rounded-full"
+            style={{
+              background: token.accent,
+              boxShadow: `0 0 12px ${token.accent}40`,
+            }}
+          />
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[15px] font-semibold tracking-[-0.01em] text-white">
+                {token.symbol}
+              </span>
+              <span className="text-[11px] text-white/40">{issuerLabel}</span>
+            </div>
+            <div className="mt-0.5 font-mono text-[12px] text-white/50">
+              Balance {formatAmount(wallet.balance, token.decimals, 2)}
+            </div>
           </div>
         </div>
+
+        <button
+          onClick={() => void handleClick()}
+          disabled={!isConnected || isBusy}
+          className={cn(
+            "inline-flex min-w-[124px] items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold transition-colors",
+            showDone
+              ? "border border-cyan/40 bg-cyan/[0.08] text-cyan"
+              : "bg-cyan text-black hover:bg-cyan-dim disabled:opacity-50 disabled:hover:bg-cyan",
+          )}
+        >
+          {buttonLabel({
+            isConnected,
+            isWriting: mint.isWriting,
+            isConfirming: mint.isConfirming,
+            isSuccess: showDone,
+            hasError: !!mint.error,
+          })}
+        </button>
       </div>
 
-      <button
-        onClick={() => void handleClick()}
-        disabled={!isConnected || isBusy}
-        className={cn(
-          "inline-flex min-w-[124px] items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold transition-colors",
-          showDone
-            ? "border border-cyan/40 bg-cyan/[0.08] text-cyan"
-            : "bg-cyan text-black hover:bg-cyan-dim disabled:opacity-50 disabled:hover:bg-cyan",
-        )}
-      >
-        {buttonLabel({
-          isConnected,
-          isWriting: mint.isWriting,
-          isConfirming: mint.isConfirming,
-          isSuccess: showDone,
-          hasError: !!mint.error,
-        })}
-      </button>
+      {/* ── Live status strip — only when there's a hash to show ─────── */}
+      {mint.txHash && (
+        <div
+          className={cn(
+            "flex items-center justify-between gap-3 border-t px-5 py-2.5 text-[11px]",
+            mint.isConfirming
+              ? "border-cyan/10 bg-cyan/[0.02]"
+              : showDone
+              ? "border-cyan/15 bg-cyan/[0.04]"
+              : "border-white/[0.06] bg-white/[0.015]",
+          )}
+        >
+          <span
+            className={cn(
+              "uppercase tracking-[0.18em]",
+              mint.isConfirming
+                ? "text-cyan/85"
+                : showDone
+                ? "text-cyan"
+                : "text-white/50",
+            )}
+          >
+            {mint.isConfirming
+              ? "Waiting for confirmation…"
+              : showDone
+              ? "Confirmed ✓"
+              : "Tx submitted"}
+          </span>
+          <a
+            href={`${SNOWTRACE_TX}${mint.txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 font-mono text-white/65 transition-colors hover:text-cyan"
+          >
+            {mint.txHash.slice(0, 8)}…{mint.txHash.slice(-6)}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+
+      {mint.error && (
+        <div className="border-t border-red-400/20 bg-red-500/[0.06] px-5 py-2.5 text-[11px] text-red-300">
+          {String(mint.error.message ?? mint.error).slice(0, 200)}
+        </div>
+      )}
     </div>
   );
 }
