@@ -11,13 +11,13 @@ import {
   TOKENS,
 } from "@/lib/contracts";
 
-// The "magic moment" of Aqua0 — the LP declares that their SLP capital should
-// back a specific V4 pool. The hook reads this declaration at swap time.
+// The "magic moment" of Aqua0 — the LP declares that their SLP capital
+// should back a specific V4 pool. The Aqua0 hook reads this declaration
+// at swap time and pulls just-in-time depth from the SLP.
 //
-// `setJITPosition` is event-only on the SLP (no storage update — the hook
-// derives its decisions from the event log via the backend signer). For the
-// no-backend demo, we set the position once per pool the LP wants to back;
-// the deployer signs JIT auths client-side at swap time.
+// `setJITPosition` is an event-emitting authorisation on the SLP — the
+// LP signs once per pool, on-chain. No off-chain signer, no API call,
+// no orchestration server: the wallet writes directly to the SLP.
 export function useJitPreference() {
   const { address } = useAccount();
   const config = useConfig();

@@ -6,11 +6,12 @@ import { useMemo } from "react";
 // production aqua0/web-app StrategyCard so the Avalanche edition speaks the
 // same visual language.
 //
-// Why a synthetic curve: the backend doesn't expose per-tick liquidity yet,
-// so we render a Gaussian around the current tick. Reads as "liquidity is
-// concentrated near the current price" at a glance, which is accurate even
-// without live data because all our demo pools were seeded full-range at
-// 1:1 sqrt price.
+// Why a synthetic curve: there's no indexer in this build, and reading
+// per-tick liquidity from the PoolManager bitmap on every render would
+// hammer the RPC. We draw a Gaussian around the current tick instead —
+// which is honest given every demo pool was seeded full-range at 1:1
+// sqrt price, so the actual distribution is concentrated near the
+// middle by construction.
 //
 // Two variants:
 //   - aqua0:  each bar is split. Bottom ~22% (white) is the real seeded

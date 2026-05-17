@@ -12,8 +12,11 @@ import type { Address } from "viem";
 export const FUJI_DEPLOYMENT = {
   chainId: 43113,
   // Deployed 2026-05-16 from script/DeployFuji.s.sol (v2 — Twin tickers
-  // ARSt/BRLt/MXNt + second vanilla baseline pool). Deployer = SLP owner =
-  // backend signer = 0x235713C4CA6A8cd2adc0333F64d1b453BfCdBbfd.
+  // ARSt/BRLt/MXNt + second vanilla baseline pool). Deployer / owner =
+  // 0x235713C4CA6A8cd2adc0333F64d1b453BfCdBbfd. There is no off-chain
+  // service in this build — the SLP contract has a `backendSigner` slot
+  // (legacy from the multi-chain build), pointed at the deployer here so
+  // it never gates anything off-chain.
   // Old v1 deployment lives at contracts/deployments/avalanche-fuji-v1.json.
   poolManager:     "0xa0E6d121Cb492E0F8A862109701FfC59CE9f2839" as Address,
   slp:             "0xd0508EAA61bEd6e31299d56d3cDf4Be8F53863D4" as Address,

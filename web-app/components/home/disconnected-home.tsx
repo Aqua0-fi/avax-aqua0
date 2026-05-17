@@ -73,7 +73,7 @@ export function DisconnectedHome() {
         <section className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] sm:grid-cols-4">
           <Stat value="6" label="Aqua0 pools" />
           <Stat value="2" label="Issuers" sub="Ripio + Twin" />
-          <Stat value="$0" label="Backend signers" sub="LP signs JIT auths" />
+          <Stat value="100%" label="On-chain" sub="LP signs JIT auths" />
           <Stat value="6×" label="Capital multiplier" sub="vs vanilla LPing" highlighted />
         </section>
       </div>

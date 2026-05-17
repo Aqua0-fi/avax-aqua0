@@ -18,14 +18,13 @@ export type DepositStep =
   | "done"
   | "error";
 
-// Backend-less deposit:
+// Deposit flow — entirely on-chain, no server in the path:
 //   1. read allowance directly from the ERC20
 //   2. approve if needed
-//   3. call SLP.deposit(token, amount, beneficiary) with calldata built locally
+//   3. call SLP.deposit(token, amount, beneficiary)
 //
-// This replaces the old POST /api/v2/slp/prepare-deposit + Privy round-trip
-// with two on-chain calls, end-to-end client-side. No backend = no single
-// point of trust.
+// All calldata is constructed client-side with viem. There is no API,
+// no signer service, no off-chain orchestrator — wallet → RPC → SLP.
 export function useDeposit() {
   const { address } = useAccount();
   const config = useConfig();
