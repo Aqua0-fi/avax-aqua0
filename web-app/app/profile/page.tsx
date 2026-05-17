@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { HeroWaves } from "@/components/aquatic-waves";
 import { DotMark } from "@/components/dot-mark";
 import { Navbar } from "@/components/navbar";
+import { DepositCard } from "@/components/profile/deposit-card";
 import { JitActions } from "@/components/profile/jit-actions";
 import { KpiStrip } from "@/components/profile/kpi-strip";
 import { SLPInventory } from "@/components/profile/slp-inventory";
@@ -75,7 +76,10 @@ export default function ProfilePage() {
         {/* ── Inventory + Actions ───────────────────────────────────── */}
         <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
           <SLPInventory />
-          <JitActions />
+          <div className="flex flex-col gap-5">
+            <DepositCard />
+            <JitActions />
+          </div>
         </section>
       </div>
     </div>
