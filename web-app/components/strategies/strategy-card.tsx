@@ -14,7 +14,10 @@ import { formatAmount } from "@/lib/utils";
 // aqua0 strategies feel like the upgrade and the vanilla ones feel like
 // comparison furniture.
 //
-// Whole card is a Link into /strategies/[id].
+// Two explicit CTAs in the footer instead of a card-wide click target —
+// 'Add liquidity' is the primary action for aqua0 strategies, 'Detail →'
+// is always available. Vanilla cards drop the deploy CTA since they have
+// no Aqua0 deposit path.
 // ============================================================================
 
 export function StrategyCard({ strategy }: { strategy: Strategy }) {
@@ -31,8 +34,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
       : "Vanilla";
 
   return (
-    <Link
-      href={`/strategies/${strategy.id}`}
+    <article
       className={`group flex h-full flex-col rounded-xl border p-5 transition-colors ${
         isAqua
           ? "border-white/10 bg-card hover:border-white/30"
@@ -50,13 +52,16 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             }}
           />
           <div>
-            <h3
-              className={`text-[16px] font-semibold tracking-[-0.01em] ${
-                isAqua ? "text-white" : "text-white/85"
+            <Link
+              href={`/strategies/${strategy.id}`}
+              className={`text-[16px] font-semibold tracking-[-0.01em] transition-colors ${
+                isAqua
+                  ? "text-white hover:text-cyan"
+                  : "text-white/85 hover:text-white"
               }`}
             >
               {strategy.token.symbol} / USDC
-            </h3>
+            </Link>
             <p className="mt-0.5 text-[11px] text-white/50">
               <span>{strategy.marketFlag} {strategy.marketLabel}</span>
               <span className="text-white/30"> · </span>
@@ -81,7 +86,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
       </div>
 
       {/* ── Balances ────────────────────────────────────────────────── */}
-      <dl className="space-y-1.5">
+      <dl className="mb-4 space-y-1.5">
         <Row
           label={isAqua ? "SLP backing" : "Seeded"}
           value={
@@ -101,25 +106,40 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
               : "—"
           }
         />
-      </dl>
-
-      {/* ── Footer ───────────────────────────────────────────────────── */}
-      <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3">
-        <Metric
+        <Row
           label="Fee · 30d"
           value={isAqua ? "$72 (mocked)" : "$12"}
+          tint="muted"
         />
-        <span
-          className={`text-[12px] font-medium transition-colors ${
-            isAqua
-              ? "text-white/65 group-hover:text-cyan"
-              : "text-white/55 group-hover:text-white"
-          }`}
-        >
-          Open →
-        </span>
+      </dl>
+
+      {/* ── Footer CTAs ─────────────────────────────────────────────── */}
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+        {isAqua ? (
+          <>
+            <Link
+              href={`/strategies/${strategy.id}#deploy`}
+              className="flex-1 rounded-lg bg-cyan px-3.5 py-2 text-center text-[12px] font-semibold text-black transition-colors hover:bg-cyan-dim"
+            >
+              Add liquidity
+            </Link>
+            <Link
+              href={`/strategies/${strategy.id}`}
+              className="rounded-lg border border-white/10 px-3 py-2 text-[12px] font-medium text-white/65 transition-colors hover:border-white/30 hover:text-white"
+            >
+              Detail →
+            </Link>
+          </>
+        ) : (
+          <Link
+            href={`/strategies/${strategy.id}`}
+            className="ml-auto text-[12px] font-medium text-white/55 transition-colors hover:text-white"
+          >
+            Open detail →
+          </Link>
+        )}
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -149,15 +169,6 @@ function Row({
         {value}
       </dd>
     </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="flex items-baseline gap-1.5 text-[11px]">
-      <span className="uppercase tracking-[0.18em] text-white/40">{label}</span>
-      <span className="font-mono text-white/65">{value}</span>
-    </span>
   );
 }
 

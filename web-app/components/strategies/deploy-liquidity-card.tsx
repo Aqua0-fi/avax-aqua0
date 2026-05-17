@@ -50,7 +50,12 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
   const disabled = !isConnected || jit.isPending || !amount;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-cyan/25 bg-cyan/[0.04] p-5 sm:p-6">
+    // id="deploy" is the anchor target the StrategyCard's "Add liquidity"
+    // CTA scrolls to. scroll-mt offsets for the sticky navbar.
+    <div
+      id="deploy"
+      className="relative scroll-mt-24 overflow-hidden rounded-xl border border-cyan/25 bg-cyan/[0.04] p-5 sm:p-6"
+    >
       <div
         className="pointer-events-none absolute -top-16 -right-12 h-40 w-40 rounded-full opacity-40 blur-3xl"
         style={{ backgroundColor: "rgba(127, 229, 229, 0.18)" }}
