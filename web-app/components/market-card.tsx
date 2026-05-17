@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useAccount } from "wagmi";
 import { useSLPBalance, useWalletBalance } from "@/hooks/use-slp-balance";
+import { LiquidityAtlas } from "@/components/strategies/liquidity-atlas";
 import type { Market } from "@/lib/contracts";
 import { formatAmount } from "@/lib/utils";
 
 // ============================================================================
 // MarketCard — one FX market (ARS, BRL, MXN). Renders the two issuer routes
-// (Ripio + Twin) side-by-side and shows both are backed by the same SLP
-// deposit. This is the visual the pitch hinges on. Styled to match the
-// production aqua0/web-app card aesthetic: solid #0d0d0d surface, tight
-// 16px heading, badge with pulsing dot for the Aqua0 hook indicator.
+// (Ripio + Twin) side-by-side with per-pool LiquidityAtlas heatmaps so each
+// pool reads like a production aqua0 strategy card while preserving the
+// "one SLP, two issuers" grouping that anchors the LATAM pitch.
+//
+// Whole card is a Link into /strategies/[code] for deeper detail.
 // ============================================================================
 
 export function MarketCard({ market }: { market: Market }) {
@@ -36,7 +38,7 @@ export function MarketCard({ market }: { market: Market }) {
         <Badge label="Aqua0 hook" tone="aqua" pulse />
       </header>
 
-      {/* ── Routes (Ripio | Twin) ───────────────────────────────────────── */}
+      {/* ── Routes (Ripio | Twin) — each with its own atlas ─────────────── */}
       <div className="grid grid-cols-2 gap-2.5">
         {market.routes.map((route) => (
           <RouteCell key={route.poolId} route={route} />
@@ -84,9 +86,15 @@ function RouteCell({ route }: { route: Market["routes"][number] }) {
         </span>
       </div>
 
+      {/* Per-pool liquidity heatmap — split-bar variant tells the story
+          (real V4 + virtual JIT) inline without needing a legend. */}
+      <div className="mb-3">
+        <LiquidityAtlas variant="aqua0" size="sm" showLegend={false} />
+      </div>
+
       <dl className="space-y-1.5">
         <Row
-          label="SLP backing"
+          label="SLP"
           value={
             isConnected
               ? formatAmount(slp.balance?.deposited, route.token.decimals, 0)

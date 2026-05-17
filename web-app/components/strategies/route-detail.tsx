@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Copy, Check, ExternalLink } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useSLPBalance, useWalletBalance } from "@/hooks/use-slp-balance";
+import { LiquidityAtlas } from "@/components/strategies/liquidity-atlas";
 import type { MarketRoute } from "@/lib/contracts";
 import { formatAmount } from "@/lib/utils";
 
@@ -58,6 +59,14 @@ export function RouteDetail({ route }: { route: MarketRoute }) {
         </div>
         <Badge label="Aqua0 hook" tone="aqua" pulse />
       </header>
+
+      {/* ── Liquidity atlas (per-pool bell curve) ─────────────────── */}
+      <div className="mb-4 rounded-lg border border-white/[0.06] bg-white/[0.015] px-3.5 py-3">
+        <div className="mb-2 text-[9.5px] uppercase tracking-[0.22em] text-white/40">
+          Liquidity around current tick
+        </div>
+        <LiquidityAtlas variant="aqua0" size="md" showLegend />
+      </div>
 
       {/* ── Pool ID ───────────────────────────────────────────────── */}
       <div className="mb-4 rounded-lg border border-white/[0.06] bg-white/[0.015] px-3.5 py-2.5">
