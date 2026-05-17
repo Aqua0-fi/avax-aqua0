@@ -9,6 +9,7 @@ import {
   waitForTransactionReceipt,
 } from "@wagmi/core";
 import { ERC20_ABI, FUJI_DEPLOYMENT, SLP_ABI, type TokenMeta } from "@/lib/contracts";
+import { FUJI_CHAIN_ID } from "@/lib/wagmi";
 
 export type DepositStep =
   | "idle"
@@ -52,6 +53,7 @@ export function useDeposit() {
       if (allowance < amount) {
         setStep("approving");
         const approveHash = await writeContract(config, {
+          chainId: FUJI_CHAIN_ID,
           address: token.address,
           abi: ERC20_ABI,
           functionName: "approve",
@@ -62,6 +64,7 @@ export function useDeposit() {
 
       setStep("depositing");
       const depositHash = await writeContract(config, {
+        chainId: FUJI_CHAIN_ID,
         address: FUJI_DEPLOYMENT.slp,
         abi: SLP_ABI,
         functionName: "deposit",

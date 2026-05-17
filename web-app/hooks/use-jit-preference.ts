@@ -10,6 +10,7 @@ import {
   SLP_ABI,
   TOKENS,
 } from "@/lib/contracts";
+import { FUJI_CHAIN_ID } from "@/lib/wagmi";
 
 // The "magic moment" of Aqua0 — the LP declares that their SLP capital
 // should back a specific V4 pool. The Aqua0 hook reads this declaration
@@ -43,6 +44,7 @@ export function useJitPreference() {
       const amount1 = parseUnits(args.amount1Human, args.decimals1);
 
       const hash = await writeContract(config, {
+        chainId: FUJI_CHAIN_ID,
         address: FUJI_DEPLOYMENT.slp,
         abi: SLP_ABI,
         functionName: "setJITPosition",

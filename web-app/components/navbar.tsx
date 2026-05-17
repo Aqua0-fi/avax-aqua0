@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { ChainGuard } from "./chain-guard";
 import { ConnectButton } from "./connect-button";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/40 backdrop-blur-md">
       <nav className="relative mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* ── Brand ─────────────────────────────────────────────────── */}
@@ -103,5 +105,12 @@ export function Navbar() {
         </div>
       )}
     </header>
+
+    {/* ── Wrong-network banner ─────────────────────────────────────────
+        Sits in the flow right under the navbar so it composes naturally
+        when sticky-positioned alongside it. Renders nothing when the
+        wallet is disconnected or already on Fuji. */}
+    <ChainGuard />
+    </>
   );
 }
