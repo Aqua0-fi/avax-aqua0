@@ -38,6 +38,19 @@ const SWAP_EVENT = parseAbiItem(
 
 const POOL_STATS_REFETCH_INTERVAL_MS = 10_000;
 
+// Per-browser-session "demo start point". The first time usePoolStats runs
+// in a tab we record the current chain head, and from then on we only count
+// swap events that emitted after that block. This way the comparison panel
+// starts at zero on every page load — fresh demo state for any judge that
+// opens the app — while still picking up the swaps they trigger with the
+// "Run N swaps" button.
+//
+// sessionStorage (not localStorage) so different tabs don't share, and so
+// closing + reopening the tab gives a clean reset. To manually reset
+// mid-session, run `sessionStorage.removeItem('aqua0:swapStatsFromBlock')`
+// in DevTools and reload.
+const STATS_FROM_BLOCK_KEY = "aqua0:swapStatsFromBlock";
+
 export interface PoolStats {
   strategy: Strategy;
   swapCount: number;
@@ -79,13 +92,30 @@ export function usePoolStats() {
     queryFn: async () => {
       if (!publicClient) return emptyReport();
 
+      // Pick the "demo start point" once per tab. First call: freeze the
+      // current head block in sessionStorage; subsequent calls reuse it
+      // so refetches keep accumulating from the same baseline.
+      let fromBlock: bigint;
+      const stored =
+        typeof window !== "undefined"
+          ? window.sessionStorage.getItem(STATS_FROM_BLOCK_KEY)
+          : null;
+      if (stored) {
+        fromBlock = BigInt(stored);
+      } else {
+        fromBlock = await publicClient.getBlockNumber();
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(STATS_FROM_BLOCK_KEY, fromBlock.toString());
+        }
+      }
+
       // One big query for the PoolManager, no `args` filter. We do the
       // poolId match in JS — 5 surfaced poolIds vs the indexed `id`
       // topic means the RPC would otherwise need 5 round trips.
       const logs = await publicClient.getLogs({
         address: FUJI_DEPLOYMENT.poolManager,
         event: SWAP_EVENT,
-        fromBlock: FUJI_DEPLOYMENT.slpDeployBlock,
+        fromBlock,
         toBlock: "latest",
       });
 
