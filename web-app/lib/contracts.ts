@@ -17,11 +17,20 @@ export const FUJI_DEPLOYMENT = {
   // service in this build — the SLP contract has a `backendSigner` slot
   // (legacy from the multi-chain build), pointed at the deployer here so
   // it never gates anything off-chain.
+  //
+  // SLP balance accounting: the contract does NOT store per-user balances
+  // on-chain — it only emits Deposited / Withdrawn events. We compute
+  // balances client-side via getLogs (see use-slp-balance.ts). Still 100 %
+  // on-chain — no backend, no indexer.
   // Old v1 deployment lives at contracts/deployments/avalanche-fuji-v1.json.
   poolManager:     "0xa0E6d121Cb492E0F8A862109701FfC59CE9f2839" as Address,
   slp:             "0xd0508EAA61bEd6e31299d56d3cDf4Be8F53863D4" as Address,
   aqua0Hook:       "0x43EbC33AC48f3FDf9aeF56a40e31F02D880280C0" as Address,
   liquidityRouter: "0xa3e4EC3fcd8e854437E69570BA385fD172830a2D" as Address,
+  // The block at which the v2 SLP went live. Used as the lower bound for
+  // getLogs() when computing per-user SLP balances from Deposited /
+  // Withdrawn events. Pulled from deployments/avalanche-fuji.json.
+  slpDeployBlock: 55441210n,
   tokens: {
     usdc: "0xffd244F82765C12c689e47081fE5534f5395b87B" as Address,
     // Ripio family — live on Ethereum + Base + World today, Avalanche on roadmap.
@@ -321,16 +330,54 @@ export const ERC20_ABI = [
   { type: "function", name: "symbol", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
 ] as const;
 
+// SharedLiquidityPool ABI — matches src/slp/SharedLiquidityPool.sol exactly.
+//
+// Important: the contract does NOT expose a `balances(user, token)` getter.
+// Per-user balances are not stored on-chain at all. The architecture relies
+// on a backend indexing the Deposited / Withdrawn events and computing
+// balances off-chain. For our zero-backend frontend we do the same thing
+// client-side via publicClient.getLogs() — see hooks/use-slp-balance.ts.
+//
+// setJITPosition's signature is wider than you might expect because the
+// contract was originally cross-chain: each declaration carries a
+// `targetChainId` and explicit token0/token1 addresses so the Aqua0 hook
+// on a remote chain can verify the source LP has matching backing.
 export const SLP_ABI = [
   { type: "function", name: "deposit", stateMutability: "nonpayable", inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }, { name: "beneficiary", type: "address" }], outputs: [] },
-  { type: "function", name: "balances", stateMutability: "view", inputs: [{ name: "user", type: "address" }, { name: "token", type: "address" }], outputs: [{ name: "deposited", type: "uint256" }, { name: "withdrawn", type: "uint256" }, { name: "pnlCredit", type: "uint256" }, { name: "pnlDebit", type: "uint256" }] },
-  { type: "function", name: "nonces", stateMutability: "view", inputs: [{ name: "owner", type: "address" }], outputs: [{ type: "uint256" }] },
-  { type: "function", name: "backendSigner", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
-  { type: "function", name: "setJITPosition", stateMutability: "nonpayable", inputs: [{ name: "poolId", type: "bytes32" }, { name: "tickLower", type: "int24" }, { name: "tickUpper", type: "int24" }, { name: "amount0", type: "uint256" }, { name: "amount1", type: "uint256" }], outputs: [] },
-  { type: "event", name: "Deposited", inputs: [{ name: "beneficiary", type: "address", indexed: true }, { name: "token", type: "address", indexed: true }, { name: "amount", type: "uint256", indexed: false }, { name: "depositor", type: "address", indexed: false }], anonymous: false },
-  { type: "event", name: "Withdrawn", inputs: [{ name: "owner", type: "address", indexed: true }, { name: "token", type: "address", indexed: true }, { name: "amount", type: "uint256", indexed: false }, { name: "recipient", type: "address", indexed: false }], anonymous: false },
-  { type: "event", name: "JITPositionSet", inputs: [{ name: "owner", type: "address", indexed: true }, { name: "poolId", type: "bytes32", indexed: true }, { name: "tickLower", type: "int24", indexed: false }, { name: "tickUpper", type: "int24", indexed: false }, { name: "amount0", type: "uint256", indexed: false }, { name: "amount1", type: "uint256", indexed: false }], anonymous: false },
-  { type: "event", name: "SwapSettled", inputs: [{ name: "swapId", type: "bytes32", indexed: true }, { name: "poolId", type: "bytes32", indexed: true }, { name: "feesUsd", type: "uint256", indexed: false }], anonymous: false },
+  { type: "function", name: "setJITPosition", stateMutability: "nonpayable", inputs: [
+    { name: "poolId", type: "bytes32" },
+    { name: "targetChainId", type: "uint256" },
+    { name: "tickLower", type: "int24" },
+    { name: "tickUpper", type: "int24" },
+    { name: "amount0", type: "uint256" },
+    { name: "amount1", type: "uint256" },
+    { name: "token0", type: "address" },
+    { name: "token1", type: "address" },
+  ], outputs: [] },
+  { type: "function", name: "removeJITPosition", stateMutability: "nonpayable", inputs: [{ name: "poolId", type: "bytes32" }], outputs: [] },
+  { type: "event", name: "Deposited", inputs: [
+    { name: "user", type: "address", indexed: true },
+    { name: "token", type: "address", indexed: true },
+    { name: "amount", type: "uint256", indexed: false },
+  ], anonymous: false },
+  { type: "event", name: "Withdrawn", inputs: [
+    { name: "user", type: "address", indexed: true },
+    { name: "token", type: "address", indexed: true },
+    { name: "amount", type: "uint256", indexed: false },
+    { name: "destination", type: "address", indexed: false },
+  ], anonymous: false },
+  { type: "event", name: "JITPositionSet", inputs: [
+    { name: "lp", type: "address", indexed: true },
+    { name: "poolId", type: "bytes32", indexed: true },
+    { name: "sourceChainId", type: "uint256", indexed: true },
+    { name: "targetChainId", type: "uint256", indexed: false },
+    { name: "tickLower", type: "int24", indexed: false },
+    { name: "tickUpper", type: "int24", indexed: false },
+    { name: "amount0", type: "uint256", indexed: false },
+    { name: "amount1", type: "uint256", indexed: false },
+    { name: "token0", type: "address", indexed: false },
+    { name: "token1", type: "address", indexed: false },
+  ], anonymous: false },
 ] as const;
 
 // PoolKey — used both for `poolManager.swap` and for deriving the on-chain

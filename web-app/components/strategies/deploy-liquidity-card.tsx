@@ -92,13 +92,7 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
     }
 
     setStep("setting-jit");
-    const jitHash = await jit.setPreference({
-      poolId: strategy.poolId,
-      amount0Human: amount,
-      amount1Human: amount,
-      decimals0: TOKENS.usdc.decimals,
-      decimals1: strategy.token.decimals,
-    });
+    const jitHash = await jit.setPreference(strategy, amount);
     if (!jitHash) {
       setErrorMsg(jit.error ?? "setJITPosition failed");
       setStep("error");

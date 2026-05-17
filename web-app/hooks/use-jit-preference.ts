@@ -10,10 +10,12 @@ import {
 } from "@wagmi/core";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  AQUA0_STRATEGIES,
   FUJI_DEPLOYMENT,
   FULL_RANGE_TICKS,
   SLP_ABI,
   TOKENS,
+  type Strategy,
 } from "@/lib/contracts";
 import { FUJI_CHAIN_ID } from "@/lib/wagmi";
 
@@ -31,6 +33,11 @@ const MAX_PRIORITY_FEE_PER_GAS = parseGwei("2");
 // `setJITPosition` is an event-emitting authorisation on the SLP — the
 // LP signs once per pool, on-chain. No off-chain signer, no API call,
 // no orchestration server: the wallet writes directly to the SLP.
+//
+// The contract signature is wider than you might expect: the SLP was
+// originally designed for cross-chain liquidity, so every declaration
+// carries an explicit `targetChainId` plus token0 / token1 addresses. For
+// the Fuji-only demo we pass `targetChainId = FUJI_CHAIN_ID` (same chain).
 export function useJitPreference() {
   const { address } = useAccount();
   const config = useConfig();
@@ -38,23 +45,29 @@ export function useJitPreference() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function setPreference(args: {
-    poolId: `0x${string}`;
-    amount0Human: string;
-    amount1Human: string;
-    /** decimals must match token0 / token1 — all 6 in our LATAM-stable demo. */
-    decimals0: number;
-    decimals1: number;
-  }) {
+  async function setPreference(strategy: Strategy, humanAmount: string) {
     if (!address) {
       setError("Connect a wallet first");
+      return;
+    }
+    if (strategy.kind !== "aqua0") {
+      setError("setPreference only applies to Aqua0 strategies");
       return;
     }
     setError(null);
     setIsPending(true);
     try {
-      const amount0 = parseUnits(args.amount0Human, args.decimals0);
-      const amount1 = parseUnits(args.amount1Human, args.decimals1);
+      // V4 PoolKey sorts currency0 < currency1 by address. The SLP
+      // expects the JIT declaration to match that order so token0 and
+      // amount0 always refer to the lower-address currency.
+      const usdcAddr = TOKENS.usdc.address;
+      const latamAddr = strategy.token.address;
+      const usdcIsToken0 = usdcAddr.toLowerCase() < latamAddr.toLowerCase();
+      const token0 = usdcIsToken0 ? usdcAddr : latamAddr;
+      const token1 = usdcIsToken0 ? latamAddr : usdcAddr;
+
+      // 1:1 demo — both sides at the same human amount + same decimals.
+      const amount = parseUnits(humanAmount, TOKENS.usdc.decimals);
 
       const nonce = await getTransactionCount(config, {
         address,
@@ -68,11 +81,14 @@ export function useJitPreference() {
         abi: SLP_ABI,
         functionName: "setJITPosition",
         args: [
-          args.poolId,
+          strategy.poolId,
+          BigInt(FUJI_CHAIN_ID), // targetChainId — same chain in this demo
           FULL_RANGE_TICKS.tickLower,
           FULL_RANGE_TICKS.tickUpper,
-          amount0,
-          amount1,
+          amount,
+          amount,
+          token0,
+          token1,
         ],
         maxFeePerGas: MAX_FEE_PER_GAS,
         maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
@@ -91,27 +107,12 @@ export function useJitPreference() {
     }
   }
 
-  /** Convenience: declare the same amount across all three Twin LATAM pools
-   *  (ARSt / BRLt / MXNt) backed by one shared SLP deposit. The three Ripio
-   *  Aqua0 pools are still deployed on-chain but excluded here to keep the
-   *  demo focused on a single issuer (see lib/contracts.ts STRATEGIES). */
+  /** Convenience: declare the same amount across every surfaced Aqua0
+   *  strategy — after the Twin-only simplification that's ARSt / BRLt /
+   *  MXNt, all backed by one shared SLP deposit. */
   async function backAllLatamPools(humanAmount: string) {
-    // All active mocks (USDC + ARSt/BRLt/MXNt) are 6 decimals — keeps the
-    // demo math clean.
-    const dec = TOKENS.usdc.decimals;
-    const pools = [
-      FUJI_DEPLOYMENT.pools.arstUsdcAqua0,
-      FUJI_DEPLOYMENT.pools.brltUsdcAqua0,
-      FUJI_DEPLOYMENT.pools.mxntUsdcAqua0,
-    ];
-    for (const poolId of pools) {
-      await setPreference({
-        poolId,
-        amount0Human: humanAmount,
-        amount1Human: humanAmount,
-        decimals0: dec,
-        decimals1: dec,
-      });
+    for (const strategy of AQUA0_STRATEGIES) {
+      await setPreference(strategy, humanAmount);
     }
   }
 
