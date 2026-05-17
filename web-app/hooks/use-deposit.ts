@@ -9,6 +9,7 @@ import {
   writeContract,
   waitForTransactionReceipt,
 } from "@wagmi/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { ERC20_ABI, FUJI_DEPLOYMENT, SLP_ABI, type TokenMeta } from "@/lib/contracts";
 import { FUJI_CHAIN_ID } from "@/lib/wagmi";
 
@@ -38,6 +39,7 @@ export type DepositStep =
 export function useDeposit() {
   const { address } = useAccount();
   const config = useConfig();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<DepositStep>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -100,6 +102,11 @@ export function useDeposit() {
         maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
       });
       await waitForTransactionReceipt(config, { hash: depositHash });
+
+      // Force every wagmi readContract subscriber on the page (SLPInventory,
+      // KpiStrip, every DeployLiquidityCard sibling…) to refresh now instead
+      // of waiting for the 5 s refetch tick.
+      await queryClient.invalidateQueries();
 
       setStep("done");
       return depositHash;

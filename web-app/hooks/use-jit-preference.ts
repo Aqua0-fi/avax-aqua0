@@ -8,6 +8,7 @@ import {
   writeContract,
   waitForTransactionReceipt,
 } from "@wagmi/core";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FUJI_DEPLOYMENT,
   FULL_RANGE_TICKS,
@@ -33,6 +34,7 @@ const MAX_PRIORITY_FEE_PER_GAS = parseGwei("2");
 export function useJitPreference() {
   const { address } = useAccount();
   const config = useConfig();
+  const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +78,10 @@ export function useJitPreference() {
         maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
       });
       await waitForTransactionReceipt(config, { hash });
+      // Refresh every wagmi reader so the JIT inventory / KPI strip pick up
+      // the new position instantly (the events are also surfaced via
+      // refetchInterval as a backstop).
+      await queryClient.invalidateQueries();
       return hash;
     } catch (err) {
       console.error("[useJitPreference] failed:", err);

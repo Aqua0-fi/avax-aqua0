@@ -8,6 +8,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { ERC20_ABI, type TokenMeta } from "@/lib/contracts";
 import { FUJI_CHAIN_ID } from "@/lib/wagmi";
 
@@ -35,6 +36,7 @@ const STUCK_TIMEOUT_MS = 30_000;
 // instead of all sharing a single 'isPending' flag.
 export function useMint() {
   const { address } = useAccount();
+  const queryClient = useQueryClient();
   const publicClient = usePublicClient({ chainId: FUJI_CHAIN_ID });
   const {
     writeContractAsync,
@@ -51,6 +53,15 @@ export function useMint() {
     isSuccess,
     error: receiptError,
   } = useWaitForTransactionReceipt({ hash: pendingHash });
+
+  // When the mint receipt lands, refresh every wagmi reader so the faucet
+  // row + SLPInventory + KpiStrip + DepositCard all reflect the new wallet
+  // balance instantly. Without this they wait up to BALANCE_REFETCH_INTERVAL.
+  useEffect(() => {
+    if (isSuccess) {
+      void queryClient.invalidateQueries();
+    }
+  }, [isSuccess, queryClient]);
 
   // Watch for the wallet-broadcast-failed mode: hash exists, polling started,
   // but no receipt after STUCK_TIMEOUT_MS. Flip `isStuck` so the UI can

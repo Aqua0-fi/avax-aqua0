@@ -9,6 +9,7 @@ import {
   writeContract,
   waitForTransactionReceipt,
 } from "@wagmi/core";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ERC20_ABI,
   FUJI_DEPLOYMENT,
@@ -56,6 +57,7 @@ export type VanillaDepositStep =
 export function useVanillaDeposit() {
   const { address } = useAccount();
   const config = useConfig();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<VanillaDepositStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
@@ -156,6 +158,12 @@ export function useVanillaDeposit() {
         maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
       });
       await waitForTransactionReceipt(config, { hash });
+
+      // Refresh every wagmi readContract subscriber so wallet balances drop
+      // immediately on the inventory + KPI strip without waiting for the
+      // 5 s refetch tick.
+      await queryClient.invalidateQueries();
+
       setTxHash(hash);
       setStep("done");
       return hash;
