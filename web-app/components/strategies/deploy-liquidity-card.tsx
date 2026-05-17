@@ -1,51 +1,52 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Check } from "lucide-react";
 import { parseUnits } from "viem";
 import { useAccount } from "wagmi";
-import { useDeposit } from "@/hooks/use-deposit";
 import { useJitPreference } from "@/hooks/use-jit-preference";
-import { useSLPBalance, useWalletBalance } from "@/hooks/use-slp-balance";
+import { useSLPBalance } from "@/hooks/use-slp-balance";
 import { TOKENS, type Strategy } from "@/lib/contracts";
 import { cn, formatAmount } from "@/lib/utils";
 
-// DeployLiquidityCard — the per-strategy "add liquidity" action.
+// DeployLiquidityCard — the per-strategy "back this market" action.
 //
-// LPing a V4 pool is pair-balanced: to back a USDC/wARS pool with $1k of
-// depth on each side you need to commit 1,000 USDC + 1,000 wARS. This
-// component runs the full sequence end-to-end:
+// Conceptually: depositing into the SLP is a SEPARATE step that happens
+// ONCE in /profile ("enter the system"). After that the LP's capital is
+// eligible to back any Aqua0 strategy. This card is where the LP says
+// "draw on my SLP balance for this specific pool" — that's it, one
+// EIP-712 declaration on-chain, one signature.
 //
-//   1. Deposit `amount` USDC  into the SLP (approve if allowance < amount)
-//   2. Deposit `amount` LATAM into the SLP (approve if allowance < amount)
-//   3. Call SLP.setJITPosition(poolId, fullRange, amount, amount) to
-//      authorise the Aqua0 hook to draw on those balances during swaps.
+// Critically: setJITPosition is DECLARATIVE — it does NOT transfer
+// tokens. So an LP can back twin-arst with 20k, then back twin-brlt
+// with the SAME 20k, then back twin-mxnt with the SAME 20k. The SLP
+// balance never drops. The Aqua0 hook picks the min(declared,
+// available) at swap time, so the capital is effectively shared across
+// every strategy the LP backs. That's the magic moment the demo lives
+// for — we surface the SLP balance prominently so the LP can SEE that
+// it doesn't move between strategies.
 //
-// All three steps run client-side via wagmi — no API, no signer service.
-// Preset buttons (1k / 5k / 20k) let a judge deploy without typing.
+// If the LP arrived here without depositing first, we don't try to be
+// clever — we link them back to /profile to run the deposit flow. The
+// happy path is meant to be sequential.
 
-type DeployStep =
-  | "idle"
-  | "depositing-usdc"
-  | "depositing-latam"
-  | "setting-jit"
-  | "done"
-  | "error";
+type BackStep = "idle" | "setting-jit" | "done" | "error";
 
+// Default human amount when the LP opens the card. 20k matches the pitch
+// number; the actual cap is `min(slpUsdc, slpLatam)`, surfaced inline.
+const DEFAULT_AMOUNT = "20000";
 const PRESETS = ["1000", "5000", "20000"] as const;
 
 export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
   const { isConnected } = useAccount();
-  const usdcWallet = useWalletBalance(TOKENS.usdc);
   const usdcSlp = useSLPBalance(TOKENS.usdc);
-  const latamWallet = useWalletBalance(strategy.token);
   const latamSlp = useSLPBalance(strategy.token);
 
-  const deposit = useDeposit();
   const jit = useJitPreference();
 
-  const [amount, setAmount] = useState<string>("");
-  const [step, setStep] = useState<DeployStep>("idle");
+  const [amount, setAmount] = useState<string>(DEFAULT_AMOUNT);
+  const [step, setStep] = useState<BackStep>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const amountRaw = useMemo(() => {
@@ -57,40 +58,23 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
     }
   }, [amount]);
 
-  // Wallet must cover the deposit on BOTH sides — USDC and the LATAM stable.
-  const usdcShort =
-    isConnected &&
-    amountRaw > 0n &&
-    (usdcWallet.balance ?? 0n) < amountRaw;
-  const latamShort =
-    isConnected &&
-    amountRaw > 0n &&
-    (latamWallet.balance ?? 0n) < amountRaw;
-  const isRunning =
-    step === "depositing-usdc" ||
-    step === "depositing-latam" ||
-    step === "setting-jit";
+  // SLP must cover the declaration on BOTH sides — declaring 20k of USDC
+  // depth needs 20k USDC sitting in the LP's SLP balance, and likewise
+  // for the LATAM side. setJITPosition itself doesn't enforce this (it
+  // just emits the event), but the Aqua0 hook would silently fall back
+  // to min(declared, available), so the user-visible number on this
+  // page should reflect what the hook will actually draw.
+  const slpUsdc = usdcSlp.balance?.available ?? 0n;
+  const slpLatam = latamSlp.balance?.available ?? 0n;
+  const usdcShort = isConnected && amountRaw > 0n && slpUsdc < amountRaw;
+  const latamShort = isConnected && amountRaw > 0n && slpLatam < amountRaw;
+  const slpEmpty = isConnected && slpUsdc === 0n && slpLatam === 0n;
 
-  async function handleDeploy() {
+  const isRunning = step === "setting-jit";
+
+  async function handleBack() {
     if (amountRaw === 0n) return;
     setErrorMsg(null);
-    setStep("depositing-usdc");
-
-    const usdcHash = await deposit.deposit(TOKENS.usdc, amount);
-    if (!usdcHash) {
-      setErrorMsg(deposit.error ?? "USDC deposit failed");
-      setStep("error");
-      return;
-    }
-
-    setStep("depositing-latam");
-    const latamHash = await deposit.deposit(strategy.token, amount);
-    if (!latamHash) {
-      setErrorMsg(deposit.error ?? `${strategy.token.symbol} deposit failed`);
-      setStep("error");
-      return;
-    }
-
     setStep("setting-jit");
     const jitHash = await jit.setPreference(strategy, amount);
     if (!jitHash) {
@@ -98,13 +82,10 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
       setStep("error");
       return;
     }
-
-    // Refresh balances so the UI reflects the new state immediately.
-    usdcWallet.refetch();
+    // SLP balances don't change (setJIT is declarative) but the user
+    // might top up + redeclare, so refresh anyway.
     usdcSlp.refetch();
-    latamWallet.refetch();
     latamSlp.refetch();
-
     setStep("done");
   }
 
@@ -113,7 +94,8 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
     isRunning ||
     amountRaw === 0n ||
     usdcShort ||
-    latamShort;
+    latamShort ||
+    slpEmpty;
 
   return (
     <div
@@ -130,21 +112,24 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
           Add liquidity
         </div>
         <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.015em] text-white">
-          Provide both sides
+          Back this strategy
         </h2>
         <p className="mt-1.5 text-[12.5px] leading-[1.55] text-white/65">
-          LPing this pool means committing equal value of{" "}
-          <span className="text-white">USDC</span> and{" "}
-          <span className="text-cyan">{strategy.token.symbol}</span>. We
-          deposit both into the SLP and authorise the hook to draw them
-          just-in-time during swaps.
+          Authorise the Aqua0 hook to draw on your{" "}
+          <span className="text-white">SLP balance</span> for swaps on this
+          pool. One signature.{" "}
+          <span className="text-cyan">
+            Your capital isn&apos;t moved or locked
+          </span>
+          {" "}— after this you can back the other Twin markets too without
+          re-depositing.
         </p>
       </header>
 
       {/* ── Amount input ───────────────────────────────────────────── */}
       <div className="relative mb-4">
         <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-white/40">
-          <span>Amount per side</span>
+          <span>JIT depth per side</span>
           <span>USDC + {strategy.token.symbol}</span>
         </div>
         <input
@@ -179,19 +164,14 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
         </div>
       </div>
 
-      {/* ── Both sides — wallet + SLP balances ────────────────────── */}
+      {/* ── SLP balance — what's actually backing this declaration ─── */}
       <div className="relative mb-4 grid grid-cols-2 gap-2">
         <SideBalance
           symbol={TOKENS.usdc.symbol}
           accent={TOKENS.usdc.accent}
-          wallet={
-            isConnected
-              ? formatAmount(usdcWallet.balance, TOKENS.usdc.decimals, 0)
-              : "—"
-          }
           slp={
             isConnected
-              ? formatAmount(usdcSlp.balance?.deposited, TOKENS.usdc.decimals, 0)
+              ? formatAmount(slpUsdc, TOKENS.usdc.decimals, 0)
               : "—"
           }
           warn={usdcShort}
@@ -199,48 +179,37 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
         <SideBalance
           symbol={strategy.token.symbol}
           accent={strategy.token.accent}
-          wallet={
-            isConnected
-              ? formatAmount(latamWallet.balance, strategy.token.decimals, 0)
-              : "—"
-          }
           slp={
             isConnected
-              ? formatAmount(latamSlp.balance?.deposited, strategy.token.decimals, 0)
+              ? formatAmount(slpLatam, strategy.token.decimals, 0)
               : "—"
           }
           warn={latamShort}
         />
       </div>
 
-      {/* ── Steps ──────────────────────────────────────────────────── */}
+      {/* ── Single on-chain step ──────────────────────────────────── */}
       <div className="relative mb-4 rounded-lg border border-white/[0.06] bg-black/30 px-3.5 py-3">
         <div className="mb-2 text-[10px] uppercase tracking-[0.22em] text-white/40">
-          On-chain steps
+          On-chain step
         </div>
         <ol className="space-y-1.5">
           <StepRow
             n={1}
-            label={`Deposit ${amount || "—"} USDC`}
-            state={stepStateFor(step, "depositing-usdc")}
-          />
-          <StepRow
-            n={2}
-            label={`Deposit ${amount || "—"} ${strategy.token.symbol}`}
-            state={stepStateFor(step, "depositing-latam")}
-          />
-          <StepRow
-            n={3}
-            label="Set JIT preference for this pool"
+            label={`Declare ${amount || "—"} of JIT depth per side`}
             state={stepStateFor(step, "setting-jit")}
           />
         </ol>
+        <p className="mt-2 text-[10.5px] leading-[1.45] text-white/40">
+          setJITPosition emits an event — no tokens move. The same SLP
+          balance can back every Twin market.
+        </p>
       </div>
 
-      {/* ── CTA ──────────────────────────────────────────────────── */}
+      {/* ── CTA ────────────────────────────────────────────────────── */}
       <button
         type="button"
-        onClick={() => void handleDeploy()}
+        onClick={() => void handleBack()}
         disabled={disabled}
         className={cn(
           "relative w-full rounded-lg px-6 py-3 text-[13px] font-semibold transition-colors",
@@ -249,7 +218,13 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
             : "bg-cyan text-black hover:bg-cyan-dim",
         )}
       >
-        {ctaLabel(step, isConnected, usdcShort, latamShort, strategy.token.symbol)}
+        {ctaLabel(step, {
+          isConnected,
+          slpEmpty,
+          usdcShort,
+          latamShort,
+          latamSymbol: strategy.token.symbol,
+        })}
       </button>
 
       {errorMsg && (
@@ -260,26 +235,39 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
 
       {step === "done" && (
         <p className="relative mt-3 text-[12px] leading-[1.55] text-cyan/85">
-          ✓ Liquidity deployed. Your SLP capital now backs swaps on{" "}
-          {strategy.token.symbol}/USDC.
+          ✓ Backed. Same SLP balance — open another Twin market and back
+          it too.
         </p>
       )}
 
-      {(usdcShort || latamShort) && !isRunning && (
+      {slpEmpty && !isRunning && (
+        <p className="relative mt-3 text-[11.5px] leading-[1.55] text-white/55">
+          Your SLP balance is empty. Head to{" "}
+          <Link
+            href="/profile"
+            className="underline decoration-cyan/40 underline-offset-4 hover:decoration-cyan"
+          >
+            /profile
+          </Link>{" "}
+          first to deposit USDC + {strategy.token.symbol} into the pool.
+        </p>
+      )}
+
+      {(usdcShort || latamShort) && !slpEmpty && !isRunning && (
         <p className="relative mt-3 text-[11.5px] leading-[1.55] text-white/55">
           Need more{" "}
           {usdcShort && latamShort
             ? `${TOKENS.usdc.symbol} + ${strategy.token.symbol}`
             : usdcShort
             ? TOKENS.usdc.symbol
-            : strategy.token.symbol}
-          ? Mint at the{" "}
-          <a
-            href="/faucet"
+            : strategy.token.symbol}{" "}
+          in the SLP? Top up at{" "}
+          <Link
+            href="/profile"
             className="underline decoration-cyan/40 underline-offset-4 hover:decoration-cyan"
           >
-            faucet
-          </a>
+            /profile
+          </Link>
           .
         </p>
       )}
@@ -287,17 +275,18 @@ export function DeployLiquidityCard({ strategy }: { strategy: Strategy }) {
   );
 }
 
-// ─── A wallet / SLP balance summary for one side of the pair ────────────────
+// ─── SLP balance summary for one side of the pair ─────────────────────────
+// We deliberately don't show the wallet balance here. The SLP balance is
+// what the hook can actually pull from; the wallet balance is irrelevant
+// to backing a strategy once the deposit step ran in /profile.
 function SideBalance({
   symbol,
   accent,
-  wallet,
   slp,
   warn,
 }: {
   symbol: string;
   accent: string;
-  wallet: string;
   slp: string;
   warn: boolean;
 }) {
@@ -319,17 +308,6 @@ function SideBalance({
       </div>
       <dl className="mt-1.5 space-y-0.5 text-[10.5px]">
         <div className="flex items-center justify-between">
-          <dt className="uppercase tracking-[0.18em] text-white/40">Wallet</dt>
-          <dd
-            className={cn(
-              "font-mono",
-              warn ? "text-amber-300" : "text-white/75",
-            )}
-          >
-            {wallet}
-          </dd>
-        </div>
-        <div className="flex items-center justify-between">
           <dt className="uppercase tracking-[0.18em] text-white/40">In SLP</dt>
           <dd className="font-mono text-cyan/85">{slp}</dd>
         </div>
@@ -340,7 +318,7 @@ function SideBalance({
 
 // ─── A row in the on-chain steps list ──────────────────────────────────────
 
-type StepState = "pending" | "active" | "done" | "skipped" | "error";
+type StepState = "pending" | "active" | "done" | "error";
 
 function StepRow({
   n,
@@ -386,48 +364,37 @@ function StepRow({
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function stepStateFor(current: DeployStep, target: DeployStep): StepState {
+function stepStateFor(current: BackStep, target: BackStep): StepState {
   if (current === "done") return "done";
-  if (current === "error") {
-    // Surface the failing step; everything before it should already be done.
-    return current === target ? "error" : "pending";
-  }
-  const order: DeployStep[] = [
-    "depositing-usdc",
-    "depositing-latam",
-    "setting-jit",
-  ];
-  const ci = order.indexOf(current);
-  const ti = order.indexOf(target);
-  if (ti < ci) return "done";
-  if (ti === ci) return "active";
+  if (current === "error") return current === target ? "error" : "pending";
+  if (current === target) return "active";
   return "pending";
 }
 
 function ctaLabel(
-  step: DeployStep,
-  isConnected: boolean,
-  usdcShort: boolean,
-  latamShort: boolean,
-  latamSymbol: string,
+  step: BackStep,
+  flags: {
+    isConnected: boolean;
+    slpEmpty: boolean;
+    usdcShort: boolean;
+    latamShort: boolean;
+    latamSymbol: string;
+  },
 ): string {
-  if (!isConnected) return "Connect wallet to deploy";
-  if (usdcShort && latamShort)
-    return `Need USDC + ${latamSymbol} in wallet`;
-  if (usdcShort) return "Need USDC in wallet";
-  if (latamShort) return `Need ${latamSymbol} in wallet`;
+  if (!flags.isConnected) return "Connect wallet to back";
+  if (flags.slpEmpty) return "Deposit to SLP first";
+  if (flags.usdcShort && flags.latamShort)
+    return `Need USDC + ${flags.latamSymbol} in SLP`;
+  if (flags.usdcShort) return "Need more USDC in SLP";
+  if (flags.latamShort) return `Need more ${flags.latamSymbol} in SLP`;
   switch (step) {
-    case "depositing-usdc":
-      return "Depositing USDC…";
-    case "depositing-latam":
-      return `Depositing ${latamSymbol}…`;
     case "setting-jit":
-      return "Setting JIT preference…";
+      return "Signing setJITPosition…";
     case "done":
-      return "Deployed ✓ — run again to top up";
+      return "Backed ✓ — open another market";
     case "error":
       return "Retry";
     default:
-      return "Add liquidity";
+      return "Back this strategy";
   }
 }

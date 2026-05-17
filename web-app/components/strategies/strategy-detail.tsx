@@ -333,13 +333,13 @@ function RouteExplainer({ strategy }: { strategy: Strategy }) {
       <ol className="grid gap-3.5 text-[13px] leading-relaxed text-white/75 md:grid-cols-2">
         <Step
           n={1}
-          title="Deposit USDC + the stable"
-          body={`Add USDC and ${strategy.token.symbol} to the SLP (one transaction per token).`}
+          title="Capital lives in the SLP"
+          body={`Done once in /profile. USDC + ${strategy.token.symbol} sit in the SLP, eligible to back any Aqua0 market.`}
         />
         <Step
           n={2}
-          title="Declare a JIT preference"
-          body="Sign once. Authorises the hook to draw on your SLP balance for this pool during swaps."
+          title="Back this strategy"
+          body="One signature here. The hook is now authorised to draw on your SLP for this pool — no tokens move."
         />
         <Step
           n={3}
@@ -349,7 +349,7 @@ function RouteExplainer({ strategy }: { strategy: Strategy }) {
         <Step
           n={4}
           title="afterSwap settles fees"
-          body="Fees credit your SLP balance. Capital is released so it can back the next swap on any other pool."
+          body="Fees credit your SLP balance. Capital is released to back the next swap — on this pool or any other you've authorised."
         />
       </ol>
     </aside>

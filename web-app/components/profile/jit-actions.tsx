@@ -1,31 +1,40 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { formatUnits } from "viem";
 import { useAccount } from "wagmi";
 import { useDeposit } from "@/hooks/use-deposit";
-import { useJitPreference } from "@/hooks/use-jit-preference";
 import { useMint } from "@/hooks/use-mint";
 import { useWalletBalance } from "@/hooks/use-slp-balance";
 import { TOKEN_LIST, TOKENS, type TokenMeta } from "@/lib/contracts";
 
-const JIT_AMOUNT = "20000"; // Pitch number — declares 20k of JIT depth per pool.
-
-// Quick-action panel on /profile. Three explicit buttons matching the demo's
-// happy path: faucet all tokens, deposit every wallet balance into the SLP,
-// then declare JIT preferences across all three Twin aqua0 markets. Aimed
-// at a judge who lands here fresh and wants to drive the demo without
-// reading docs.
+// Quick-action panel on /profile. Two buttons that prep the LP for the
+// per-strategy backing flow:
 //
-// Why "deposit all" instead of "deposit 20k USDC": the JIT hook needs BOTH
-// sides of the pair in the SLP (USDC + the Twin LATAM stable) to pull
-// transient depth on swap. A USDC-only deposit leaves swaps falling back
-// to the seeded vanilla depth — silently undermining the pitch.
+//   1. Mint all faucet tokens into the wallet.
+//   2. Deposit every wallet balance into the SLP. This is the "enter the
+//      system" moment — capital becomes eligible to be drawn against by
+//      ANY Aqua0 strategy simultaneously. The deposit doesn't pick a
+//      strategy; it just makes the capital available.
+//
+// Critically there is NO "back all 3 markets" shortcut here. The demo's
+// wow moment lives elsewhere: the LP heads to /strategies, backs the
+// twin-arst pool, watches the SLP balance NOT drop, backs twin-brlt,
+// watches it NOT drop again, backs twin-mxnt. Same capital, three
+// markets, zero fragmentation. A "back all" button would collapse that
+// beat into an invisible bulk action, so we route the LP to /strategies
+// after step 2 instead and let them feel the redeclaration trick one
+// click at a time.
+//
+// Why "deposit everything" instead of "deposit 20k USDC": the Aqua0 hook
+// needs BOTH sides of the pair in the SLP (USDC + the Twin LATAM stable)
+// to pull transient depth on swap. A USDC-only deposit silently breaks
+// the JIT pulls.
 export function JitActions() {
   const { isConnected } = useAccount();
   const { mint, isPending: mintBusy } = useMint();
   const deposit = useDeposit();
-  const jit = useJitPreference();
 
   // Read wallet balances for every token the SLP can usefully hold (USDC
   // + the 3 Twin LATAM stables). wARS / wBRL are excluded — they're part
@@ -73,10 +82,6 @@ export function JitActions() {
     }
   }
 
-  async function handleBackAllMarkets() {
-    await jit.backAllLatamPools(JIT_AMOUNT);
-  }
-
   const disabled = !isConnected;
 
   return (
@@ -86,7 +91,14 @@ export function JitActions() {
           Quick actions
         </h2>
         <p className="mt-0.5 text-[12px] text-white/55">
-          The full demo flow in three buttons. Run in order.
+          Get your capital into the SLP, then head to{" "}
+          <Link
+            href="/strategies"
+            className="border-b border-dotted border-cyan/60 text-white hover:text-cyan"
+          >
+            Strategies
+          </Link>{" "}
+          to back each market individually.
         </p>
       </header>
 
@@ -126,11 +138,11 @@ export function JitActions() {
         />
         <Step
           n={3}
-          title="Back all 3 Twin markets"
-          subtitle="Declares JIT positions across the three Twin pools. Same capital."
-          buttonLabel={jit.isPending ? "Signing…" : "Back 3 markets"}
-          onClick={handleBackAllMarkets}
-          disabled={disabled || jit.isPending}
+          title="Back each strategy individually"
+          subtitle="Open every Twin market and authorise the hook. The SLP balance stays put — the same capital backs all three."
+          buttonLabel="Open strategies"
+          href="/strategies"
+          disabled={disabled}
         />
       </div>
 
@@ -139,14 +151,22 @@ export function JitActions() {
           {deposit.error}
         </p>
       )}
-      {jit.error && (
-        <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300">
-          {jit.error}
-        </p>
-      )}
     </div>
   );
 }
+
+// Each step can be either an on-click action button (mint / deposit) or
+// a navigation link (back each strategy individually → /strategies). The
+// last step is intentionally a link so the LP lands on the strategies
+// grid and clicks into each one — that's where the "same SLP balance,
+// three pools backed" beat plays out.
+type StepProps = {
+  n: number;
+  title: string;
+  subtitle: string;
+  buttonLabel: string;
+  disabled: boolean;
+} & ({ onClick: () => void; href?: never } | { href: string; onClick?: never });
 
 function Step({
   n,
@@ -154,15 +174,9 @@ function Step({
   subtitle,
   buttonLabel,
   onClick,
+  href,
   disabled,
-}: {
-  n: number;
-  title: string;
-  subtitle: string;
-  buttonLabel: string;
-  onClick: () => void;
-  disabled: boolean;
-}) {
+}: StepProps) {
   return (
     <div className="flex items-start gap-3.5 rounded-lg border border-white/[0.06] bg-white/[0.015] px-4 py-3 transition-colors hover:border-white/15">
       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cyan/40 text-[11px] font-bold text-cyan">
@@ -172,13 +186,28 @@ function Step({
         <div className="text-[13.5px] font-semibold text-white">{title}</div>
         <div className="mt-0.5 text-[11.5px] text-white/50">{subtitle}</div>
       </div>
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className="shrink-0 rounded-lg bg-cyan px-3.5 py-1.5 text-[11px] font-semibold text-black transition-colors hover:bg-cyan-dim disabled:opacity-40 disabled:hover:bg-cyan"
-      >
-        {buttonLabel}
-      </button>
+      {href ? (
+        <Link
+          href={href}
+          aria-disabled={disabled}
+          tabIndex={disabled ? -1 : undefined}
+          className={`shrink-0 rounded-lg px-3.5 py-1.5 text-[11px] font-semibold transition-colors ${
+            disabled
+              ? "pointer-events-none border border-white/10 bg-white/[0.03] text-white/40"
+              : "border border-cyan/40 bg-cyan/[0.08] text-cyan hover:bg-cyan/[0.12]"
+          }`}
+        >
+          {buttonLabel} →
+        </Link>
+      ) : (
+        <button
+          onClick={onClick}
+          disabled={disabled}
+          className="shrink-0 rounded-lg bg-cyan px-3.5 py-1.5 text-[11px] font-semibold text-black transition-colors hover:bg-cyan-dim disabled:opacity-40 disabled:hover:bg-cyan"
+        >
+          {buttonLabel}
+        </button>
+      )}
     </div>
   );
 }
