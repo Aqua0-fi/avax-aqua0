@@ -13,6 +13,17 @@ export const metadata: Metadata = {
   title: "Aqua0 — Avalanche Edition",
   description:
     "Cross-margin prime brokerage for LATAM stablecoins. One deposit. Every market. Built as a Uniswap V4 hook on Avalanche.",
+  icons: {
+    icon: "/Aqua0.png",
+    shortcut: "/Aqua0.png",
+    apple: "/Aqua0.png",
+  },
+  openGraph: {
+    title: "Aqua0 — Avalanche Edition",
+    description:
+      "One deposit. Every LATAM-stable market. Uniswap V4 hook on Avalanche.",
+    images: ["/Aqua0.png"],
+  },
 };
 
 export default function RootLayout({

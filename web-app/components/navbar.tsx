@@ -31,9 +31,12 @@ export function Navbar() {
       <nav className="relative mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* ── Brand ─────────────────────────────────────────────────── */}
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid h-7 w-7 place-items-center rounded-md border border-white/10 bg-white/[0.04] text-[13px] font-bold text-cyan">
-            A
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/Aqua0.png"
+            alt="Aqua0"
+            className="h-7 w-7 rounded-md object-contain"
+          />
           <span className="text-[16px] font-semibold tracking-[0.01em]">
             Aqua0
           </span>
