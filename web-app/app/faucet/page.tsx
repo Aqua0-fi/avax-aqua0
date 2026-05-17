@@ -208,6 +208,38 @@ function FaucetRow({
           {String(mint.error.message ?? mint.error).slice(0, 200)}
         </div>
       )}
+
+      {mint.isStuck && !mint.isSuccess && (
+        <div className="border-t border-amber-400/25 bg-amber-500/[0.05] px-5 py-3 text-[11.5px] leading-[1.55] text-amber-100/90">
+          <div className="mb-1.5 text-[10px] uppercase tracking-[0.22em] text-amber-300">
+            Tx not landing on-chain
+          </div>
+          <p>
+            The wallet returned a hash but Fuji nodes don&apos;t see the
+            tx. This is a wallet-side broadcast issue. Two quick fixes:
+          </p>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-4">
+            <li>
+              MetaMask · Settings · Advanced ·{" "}
+              <span className="text-amber-200">Clear activity tab data</span>{" "}
+              (resets nonce cache)
+            </li>
+            <li>
+              MetaMask · Settings · Networks · Avalanche Fuji · replace RPC
+              URL with{" "}
+              <code className="font-mono text-amber-200">
+                avalanche-fuji-c-chain.publicnode.com
+              </code>
+            </li>
+          </ul>
+          <button
+            onClick={() => mint.reset()}
+            className="mt-2.5 rounded-md border border-amber-300/40 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-amber-200 transition-colors hover:bg-amber-300/10"
+          >
+            Reset row
+          </button>
+        </div>
+      )}
     </div>
   );
 }

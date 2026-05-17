@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseUnits } from "viem";
 import {
   useAccount,
@@ -9,6 +9,12 @@ import {
 } from "wagmi";
 import { ERC20_ABI, type TokenMeta } from "@/lib/contracts";
 import { FUJI_CHAIN_ID } from "@/lib/wagmi";
+
+// Wallets occasionally return a tx hash but never actually broadcast (RPC
+// misconfigured, nonce desync, etc.). 30s is well past Fuji's worst-case
+// confirmation time, so anything still pending after this is almost
+// certainly a wallet-side issue the user needs to fix manually.
+const STUCK_TIMEOUT_MS = 30_000;
 
 // Public mint on the MockERC20s — anyone calls `mint(to, amount)` and gets
 // tokens. No backend, no rate limit (intentional for the hackathon demo —
@@ -25,11 +31,31 @@ export function useMint() {
   } = useWriteContract();
 
   const [pendingHash, setPendingHash] = useState<`0x${string}` | undefined>();
+  const [isStuck, setIsStuck] = useState(false);
+
   const {
     isLoading: isConfirming,
     isSuccess,
     error: receiptError,
   } = useWaitForTransactionReceipt({ hash: pendingHash });
+
+  // Watch for the wallet-broadcast-failed mode: hash exists, polling started,
+  // but no receipt after STUCK_TIMEOUT_MS. Flip `isStuck` so the UI can
+  // surface a 'this looks like a wallet-side issue' hint with concrete
+  // remediation steps (reset MetaMask account, swap RPC URL, etc.).
+  useEffect(() => {
+    if (!pendingHash) {
+      setIsStuck(false);
+      return;
+    }
+    if (isSuccess) {
+      setIsStuck(false);
+      return;
+    }
+    if (!isConfirming) return;
+    const id = setTimeout(() => setIsStuck(true), STUCK_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [pendingHash, isConfirming, isSuccess]);
 
   async function mint(token: TokenMeta, humanAmount: string) {
     if (!address) throw new Error("Connect a wallet first");
@@ -54,6 +80,7 @@ export function useMint() {
   // success / error state without unmounting the hook.
   function reset() {
     setPendingHash(undefined);
+    setIsStuck(false);
     resetWrite();
   }
 
@@ -68,6 +95,9 @@ export function useMint() {
     isPending: isWriting || isConfirming,
     /** Receipt confirmed. */
     isSuccess,
+    /** True after STUCK_TIMEOUT_MS of polling with no receipt — almost
+     *  certainly a wallet-side broadcast issue, not our app. */
+    isStuck,
     error: (writeError ?? receiptError) as Error | null | undefined,
     txHash: pendingHash,
   };
