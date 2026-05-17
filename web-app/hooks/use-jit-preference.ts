@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { parseGwei, parseUnits } from "viem";
 import { useAccount, useConfig } from "wagmi";
-import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
+import {
+  getTransactionCount,
+  writeContract,
+  waitForTransactionReceipt,
+} from "@wagmi/core";
 import {
   FUJI_DEPLOYMENT,
   FULL_RANGE_TICKS,
@@ -50,8 +54,14 @@ export function useJitPreference() {
       const amount0 = parseUnits(args.amount0Human, args.decimals0);
       const amount1 = parseUnits(args.amount1Human, args.decimals1);
 
+      const nonce = await getTransactionCount(config, {
+        address,
+        chainId: FUJI_CHAIN_ID,
+        blockTag: "pending",
+      });
       const hash = await writeContract(config, {
         chainId: FUJI_CHAIN_ID,
+        nonce,
         address: FUJI_DEPLOYMENT.slp,
         abi: SLP_ABI,
         functionName: "setJITPosition",

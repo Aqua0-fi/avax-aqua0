@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { parseGwei, parseUnits } from "viem";
 import {
   useAccount,
+  usePublicClient,
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
@@ -34,6 +35,7 @@ const STUCK_TIMEOUT_MS = 30_000;
 // instead of all sharing a single 'isPending' flag.
 export function useMint() {
   const { address } = useAccount();
+  const publicClient = usePublicClient({ chainId: FUJI_CHAIN_ID });
   const {
     writeContractAsync,
     isPending: isWriting,
@@ -70,14 +72,24 @@ export function useMint() {
 
   async function mint(token: TokenMeta, humanAmount: string) {
     if (!address) throw new Error("Connect a wallet first");
+    if (!publicClient) throw new Error("RPC not ready yet — try again");
     const amount = parseUnits(humanAmount, token.decimals);
+
+    // Bypass the wallet's internal nonce counter. We've seen MetaMask
+    // drift +16 ahead of the real chain nonce — every new tx then waits
+    // forever for phantom predecessors. Reading from our own RPC and
+    // passing the value explicitly to writeContractAsync forces MM to
+    // use a valid nonce regardless of its internal state.
+    const nonce = await publicClient.getTransactionCount({
+      address,
+      blockTag: "pending",
+    });
+
     const hash = await writeContractAsync({
-      // Pin the tx to Fuji. Without this, wagmi happily signs against
-      // whichever chain the wallet is on — wallet returns a hash but
-      // the broadcast either goes to the wrong network or fails silently,
-      // and the receipt poll on Fuji never finds the tx. Passing chainId
-      // forces wagmi to request a chain switch first if needed.
+      // Pin to Fuji (avoids cross-chain phantom signs) + force a sane
+      // EIP-1559 fee (idle Fuji's wallet-suggested 2 wei never includes).
       chainId: FUJI_CHAIN_ID,
+      nonce,
       address: token.address,
       abi: ERC20_ABI,
       functionName: "mint",

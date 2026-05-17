@@ -4,6 +4,7 @@ import { useState } from "react";
 import { parseGwei, parseUnits } from "viem";
 import { useAccount, useConfig } from "wagmi";
 import {
+  getTransactionCount,
   readContract,
   writeContract,
   waitForTransactionReceipt,
@@ -60,8 +61,16 @@ export function useDeposit() {
 
       if (allowance < amount) {
         setStep("approving");
+        // Bypass the wallet's internal nonce — read the real on-chain
+        // nonce so we sign at a value the chain will actually accept.
+        const approveNonce = await getTransactionCount(config, {
+          address,
+          chainId: FUJI_CHAIN_ID,
+          blockTag: "pending",
+        });
         const approveHash = await writeContract(config, {
           chainId: FUJI_CHAIN_ID,
+          nonce: approveNonce,
           address: token.address,
           abi: ERC20_ABI,
           functionName: "approve",
@@ -73,8 +82,16 @@ export function useDeposit() {
       }
 
       setStep("depositing");
+      // Re-read nonce — if approve fired above the chain nonce has
+      // advanced; if not, this still returns the next free slot.
+      const depositNonce = await getTransactionCount(config, {
+        address,
+        chainId: FUJI_CHAIN_ID,
+        blockTag: "pending",
+      });
       const depositHash = await writeContract(config, {
         chainId: FUJI_CHAIN_ID,
+        nonce: depositNonce,
         address: FUJI_DEPLOYMENT.slp,
         abi: SLP_ABI,
         functionName: "deposit",
