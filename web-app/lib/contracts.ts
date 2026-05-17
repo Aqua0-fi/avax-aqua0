@@ -214,6 +214,124 @@ export const VANILLA_POOLS: VanillaPool[] = [
 ];
 
 // ============================================================================
+// Strategies — flat list of every venue an LP can browse. A "strategy" here
+// is a single pool (USDC ↔ one stablecoin), not a regional grouping. Six
+// Aqua0-hooked pools + two vanilla baselines = 8 total, each addressable
+// via /strategies/[id].
+//
+// This is the unit /strategies and /strategies/[id] render. Keeping it flat
+// matches how the production aqua0/web-app marketplace surfaces venues, and
+// removes the cognitive split between "markets" and "pools" the previous
+// design had.
+// ============================================================================
+
+export type StrategyKind = "aqua0" | "vanilla";
+
+export interface Strategy {
+  /** Stable slug for the URL — e.g. "ripio-wars", "twin-arst", "vanilla-wars". */
+  id: string;
+  kind: StrategyKind;
+  /** The non-USDC side of the pair. */
+  token: TokenMeta;
+  poolId: `0x${string}`;
+  marketCode: "ARS" | "BRL" | "MXN";
+  marketLabel: string;
+  marketFlag: string;
+  /** Issuer family — only meaningful for aqua0 strategies. */
+  issuer: "ripio" | "twin" | null;
+}
+
+export const STRATEGIES: Strategy[] = [
+  // ─── Aqua0 · ARS ────────────────────────────────────────────────────
+  {
+    id: "ripio-wars",
+    kind: "aqua0",
+    token: TOKENS.wars,
+    poolId: FUJI_DEPLOYMENT.pools.warsUsdcAqua0,
+    marketCode: "ARS",
+    marketLabel: "Argentine Peso",
+    marketFlag: "🇦🇷",
+    issuer: "ripio",
+  },
+  {
+    id: "twin-arst",
+    kind: "aqua0",
+    token: TOKENS.arst,
+    poolId: FUJI_DEPLOYMENT.pools.arstUsdcAqua0,
+    marketCode: "ARS",
+    marketLabel: "Argentine Peso",
+    marketFlag: "🇦🇷",
+    issuer: "twin",
+  },
+  // ─── Aqua0 · BRL ────────────────────────────────────────────────────
+  {
+    id: "ripio-wbrl",
+    kind: "aqua0",
+    token: TOKENS.wbrl,
+    poolId: FUJI_DEPLOYMENT.pools.wbrlUsdcAqua0,
+    marketCode: "BRL",
+    marketLabel: "Brazilian Real",
+    marketFlag: "🇧🇷",
+    issuer: "ripio",
+  },
+  {
+    id: "twin-brlt",
+    kind: "aqua0",
+    token: TOKENS.brlt,
+    poolId: FUJI_DEPLOYMENT.pools.brltUsdcAqua0,
+    marketCode: "BRL",
+    marketLabel: "Brazilian Real",
+    marketFlag: "🇧🇷",
+    issuer: "twin",
+  },
+  // ─── Aqua0 · MXN ────────────────────────────────────────────────────
+  {
+    id: "ripio-wmxn",
+    kind: "aqua0",
+    token: TOKENS.wmxn,
+    poolId: FUJI_DEPLOYMENT.pools.wmxnUsdcAqua0,
+    marketCode: "MXN",
+    marketLabel: "Mexican Peso",
+    marketFlag: "🇲🇽",
+    issuer: "ripio",
+  },
+  {
+    id: "twin-mxnt",
+    kind: "aqua0",
+    token: TOKENS.mxnt,
+    poolId: FUJI_DEPLOYMENT.pools.mxntUsdcAqua0,
+    marketCode: "MXN",
+    marketLabel: "Mexican Peso",
+    marketFlag: "🇲🇽",
+    issuer: "twin",
+  },
+  // ─── Vanilla baselines ───────────────────────────────────────────────
+  {
+    id: "vanilla-wars",
+    kind: "vanilla",
+    token: TOKENS.wars,
+    poolId: FUJI_DEPLOYMENT.pools.warsUsdcVanilla,
+    marketCode: "ARS",
+    marketLabel: "Argentine Peso",
+    marketFlag: "🇦🇷",
+    issuer: null,
+  },
+  {
+    id: "vanilla-wbrl",
+    kind: "vanilla",
+    token: TOKENS.wbrl,
+    poolId: FUJI_DEPLOYMENT.pools.wbrlUsdcVanilla,
+    marketCode: "BRL",
+    marketLabel: "Brazilian Real",
+    marketFlag: "🇧🇷",
+    issuer: null,
+  },
+];
+
+export const AQUA0_STRATEGIES = STRATEGIES.filter((s) => s.kind === "aqua0");
+export const VANILLA_STRATEGIES = STRATEGIES.filter((s) => s.kind === "vanilla");
+
+// ============================================================================
 // ABIs — kept inline (vs imported JSON) so the bundle stays one self-contained
 // module and there's nothing for a future developer to wire up wrong.
 // ============================================================================
